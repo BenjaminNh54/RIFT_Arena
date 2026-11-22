@@ -1,6 +1,7 @@
 // RIFT ARENA — game input: PC (keyboard+mouse, configurable) & mobile (joystick + buttons, aim drag)
 import { settings } from '../state.js';
 import { sfx } from './audio.js';
+import { FIGHTER_MAP } from '/shared/definitions/fighters.js';
 
 export class GameInput {
   constructor(canvas, opts = {}) {
@@ -10,6 +11,7 @@ export class GameInput {
     this.mouse = { x: 0, y: 0, down: false, right: false };
     this.dx = 0; this.dy = 0;
     this.aim = 0;             // world angle
+    this.aimDist = 0;         // distance de visée (tirs courbes)
     this.fire = false;
     this.wantSuper = false;   // one-shot flags (consumed by client)
     this.wantAbility = false;
@@ -65,7 +67,7 @@ export class GameInput {
   update(local, camera, worldToScreen) {
     const s = settings();
     const kb = s.keybinds;
-    if (!this.mobile) {
+    if (!this.mobile && local) {
       // movement
       let dx = 0, dy = 0;
       if (this.keys.has(kb.up ?? 'KeyW') || this.keys.has('ArrowUp')) dy -= 1;
@@ -75,9 +77,11 @@ export class GameInput {
       this.dx = dx; this.dy = dy;
       if (this.keys.has(kb.super ?? 'Space')) { this.wantSuper = true; }
       if (this.keys.has(kb.interact ?? 'KeyE')) { this.wantKick = true; }
-      // aim toward mouse world position
+      // aim toward mouse world position (+ distance: les tirs courbes atterrissent sur la souris)
       const w = screenToWorld(camera, this.mouse.x, this.mouse.y);
       this.aim = Math.atan2(w.y - local.y, w.x - local.x);
+      const range = FIGHTER_MAP[local.f]?.attack?.range ?? 560;
+      this.aimDist = Math.max(0, Math.min(range, Math.hypot(w.x - local.x, w.y - local.y)));
       this.fire = this.mouse.down;
       if (this.autoAttack && local.ammo >= 1) {
         // fire only when an enemy is near the aim line (server validates anyway)
@@ -88,7 +92,7 @@ export class GameInput {
 
   consume() {
     const out = {
-      seq: ++this.seq, dx: this.dx, dy: this.dy, aim: this.aim,
+      seq: ++this.seq, dx: this.dx, dy: this.dy, aim: this.aim, aimDist: this.aimDist,
       fire: this.fire, wantSuper: this.wantSuper, wantAbility: this.wantAbility, wantKick: this.wantKick,
     };
     this.wantSuper = false; this.wantAbility = false; this.wantKick = false;
@@ -174,9 +178,14 @@ export function bindMobileControls(root, input, getLocal, cameraRef) {
     if (e.pointerId !== aimId) return;
     const local = getLocal();
     if (!local) return;
-    // aim from button center outward: use joystick-relative angle
-    const cam = cameraRef();
-    input.aim = Math.atan2(e.clientY - (window.innerHeight - 60), e.clientX - (window.innerWidth - 60));
+    // visée = angle + distance depuis le CENTRE RÉEL du bouton (avant codé en dur window-60 → faux)
+    const r = aimBtn.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    input.aim = Math.atan2(e.clientY - cy, e.clientX - cx);
+    // longueur du drag → distance d'atterrissage (drag court = tir proche, façon BS)
+    const range = local ? FIGHTER_MAP[local.f]?.attack?.range ?? 560 : 560;
+    const dragLen = Math.hypot(e.clientX - cx, e.clientY - cy);
+    input.aimDist = Math.max(100, Math.min(range, (dragLen / 55) * range));
     input._aimDrag = true;
   });
   const aimUp = (e) => {

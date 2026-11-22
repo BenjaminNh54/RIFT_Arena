@@ -1,5 +1,6 @@
 // RIFT ARENA — server combat: attacks, projectiles, damage, deaths, super charge
 import { FIGHTER_MAP } from '../../../shared/definitions/fighters.js';
+import { lineBlocked } from './movement.js';
 
 let projId = 0;
 let fxId = 0;
@@ -40,8 +41,8 @@ export function tryAttack(room, ent) {
       spawnProjectile(room, ent, angle + off, atk, mult);
     }
   } else if (atk.type === 'lob') {
-    // target point along aim, clamped to range; flies over walls
-    const dist = Math.min(atk.range, atk.range);
+    // atterrit LÀ OÙ on vise (distance de visée du client), clampée à la portée; passe au-dessus des murs
+    const dist = Math.max(100, Math.min(atk.range, ent.lastInput.aimDist || atk.range));
     const tx = ent.x + Math.cos(angle) * dist;
     const ty = ent.y + Math.sin(angle) * dist;
     room.projectiles.push({
@@ -81,7 +82,10 @@ function meleeArc(room, ent, angle, range, arc, dmg) {
     while (da > Math.PI) da -= 2 * Math.PI;
     while (da < -Math.PI) da += 2 * Math.PI;
     if (Math.abs(da) > arc / 2) continue;
+    // un mur entre les deux = pas de coup (comme les projectiles)
+    if (lineBlocked(room.map, ent.x, ent.y, other.x, other.y)) continue;
     room.applyDamage(other, dmg, ent);
+    room.fx({ k: 'dmg', x: other.x, y: other.y - 30, v: Math.round(dmg) });
   }
   room.fx({ k: 'slash', x: ent.x, y: ent.y, a: angle, r: range, c: ent.fighter.attack.color });
 }
@@ -97,10 +101,36 @@ function nearestEnemy(room, ent, maxDist) {
 }
 
 // Step all projectiles; returns events. Destructible crates take damage.
+// NB: ne JAMAIS ré-insérer un projectile dans room.projectiles pendant l'itération —
+// l'ancien stepLob le faisait et chaque tir courbé explosait 10-15 fois par tick.
 export function stepProjectiles(room, dt) {
   const alive = [];
   for (const p of room.projectiles) {
-    if (p.kind === 'lob') { stepLob(room, p, dt); continue; }
+    if (p.kind === 'lob') {
+      p.t += dt;
+      const k = Math.min(1, p.t / p.flight);
+      p.x = p.sx + (p.tx - p.sx) * k;
+      p.y = p.sy + (p.ty - p.sy) * k;
+      p.arcH = Math.sin(k * Math.PI) * 40; // visual arc height
+      if (k >= 1) {
+        // explode: AoE with distance falloff — exactly once
+        const src = room.ents.get(p.owner);
+        for (const other of room.combatables()) {
+          if (other.team === p.team || other.dead) continue;
+          const d = Math.hypot(other.x - p.x, other.y - p.y);
+          if (d <= p.aoe + other.radius) {
+            const dmg = Math.round(p.dmg * (1 - (d / (p.aoe + other.radius)) * 0.3));
+            room.applyDamage(other, dmg, src);
+            room.fx({ k: 'dmg', x: other.x, y: other.y - 30, v: dmg });
+          }
+        }
+        damageCratesNear(room, p.x, p.y, p.dmg, p.owner);
+        room.fx({ k: 'boom', x: p.x, y: p.y, r: p.aoe, c: p.color });
+      } else {
+        alive.push(p);
+      }
+      continue;
+    }
     if (p.homing) steerHoming(room, p, dt);
     const stepX = p.vx * dt, stepY = p.vy * dt;
     const nx = p.x + stepX, ny = p.y + stepY;
@@ -127,6 +157,7 @@ export function stepProjectiles(room, dt) {
         const src = room.ents.get(p.owner);
         room.applyDamage(other, p.dmg, src);
         room.fx({ k: 'hit', x: p.x, y: p.y, c: p.color });
+        room.fx({ k: 'dmg', x: other.x, y: other.y - 30, v: Math.round(p.dmg) });
         if (p.pierce > 0) { p.pierce--; } else { consumed = true; }
         break;
       } else if (p.heal > 0 && d < other.radius + 14) {
@@ -139,28 +170,6 @@ export function stepProjectiles(room, dt) {
     alive.push(p);
   }
   room.projectiles = alive;
-}
-
-function stepLob(room, p, dt) {
-  p.t += dt;
-  const k = Math.min(1, p.t / p.flight);
-  p.x = p.sx + (p.tx - p.sx) * k;
-  p.y = p.sy + (p.ty - p.sy) * k;
-  p.arcH = Math.sin(k * Math.PI) * 40; // visual arc height
-  if (k >= 1) {
-    // explode: AoE
-    for (const other of room.combatables()) {
-      if (other.team === p.team || other.dead) continue;
-      const d = Math.hypot(other.x - p.x, other.y - p.y);
-      if (d <= p.aoe + other.radius) {
-        room.applyDamage(other, p.dmg * (1 - (d / (p.aoe + other.radius)) * 0.3), room.ents.get(p.owner));
-      }
-    }
-    damageCratesNear(room, p.x, p.y, p.dmg, p.owner);
-    room.fx({ k: 'boom', x: p.x, y: p.y, r: p.aoe, c: p.color });
-  } else {
-    room.projectiles.push(p);
-  }
 }
 
 function steerHoming(room, p, dt) {

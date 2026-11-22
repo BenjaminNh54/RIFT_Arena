@@ -66,26 +66,29 @@
 
 /* Mobile controls */
 .mobile-controls { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
-.joystick { position: absolute; left: 18px; bottom: 18px; width: 128px; height: 128px; pointer-events: auto; touch-action: none; }
-.joystick .joy-base { position: absolute; inset: 0; border-radius: 50%; background: rgba(10, 16, 32, 0.55); border: 2px solid rgba(120, 150, 255, 0.25); }
-.joystick .joy-knob { position: absolute; width: 54px; height: 54px; left: 37px; top: 37px; border-radius: 50%; background: rgba(53, 224, 255, 0.35); border: 2px solid rgba(53, 224, 255, 0.7); }
-.action-buttons { position: absolute; right: 14px; bottom: 18px; display: flex; align-items: flex-end; gap: 12px; pointer-events: auto; }
+/* Contrôles tactiles façon Brawl Stars: gros boutons ronds très lisibles */
+.joystick { position: absolute; left: 18px; bottom: 18px; width: 148px; height: 148px; pointer-events: auto; touch-action: none; }
+.joystick .joy-base { position: absolute; inset: 0; border-radius: 50%; background: rgba(10, 16, 32, 0.45); border: 3px solid rgba(255, 255, 255, 0.22); box-shadow: inset 0 0 24px rgba(0,0,0,0.35); }
+.joystick .joy-knob { position: absolute; width: 64px; height: 64px; left: 42px; top: 42px; border-radius: 50%; background: rgba(53, 224, 255, 0.45); border: 3px solid rgba(255,255,255,0.65); }
+.action-buttons { position: absolute; right: 14px; bottom: 18px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto; }
 .aim-btn {
-  width: 84px; height: 84px; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(53,224,255,0.5), rgba(14,116,144,0.7));
-  border: 2px solid rgba(53,224,255,0.8);
+  width: 96px; height: 96px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,138,76,0.85), rgba(196,60,20,0.9));
+  border: 3px solid rgba(255,255,255,0.55);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
   display: flex; align-items: center; justify-content: center;
   touch-action: none;
 }
-.aim-btn svg { width: 34px; height: 34px; color: #fff; }
-.aim-btn.aiming { border-color: #fff; }
+.aim-btn svg { width: 40px; height: 40px; color: #fff; }
+.aim-btn.aiming { border-color: #fff; transform: scale(1.06); }
 .super-btn, .ability-btn {
-  width: 58px; height: 58px; border-radius: 50%;
+  width: 66px; height: 66px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 2px solid var(--line-strong); background: rgba(10,16,32,0.7);
+  border: 3px solid rgba(255,255,255,0.28); background: rgba(10,16,32,0.72);
+  box-shadow: 0 5px 14px rgba(0,0,0,0.35);
   position: relative;
 }
-.super-btn svg, .ability-btn svg { width: 24px; height: 24px; color: var(--text-dim); }
+.super-btn svg, .ability-btn svg { width: 28px; height: 28px; color: var(--text-dim); }
 .super-btn.ready { border-color: var(--gold); background: radial-gradient(circle at 35% 30%, rgba(251,191,36,0.45), rgba(120,53,15,0.7)); }
 .super-btn.ready svg { color: var(--gold); }
 .ability-btn .uses { position: absolute; top: -4px; right: -4px; background: var(--cyan); color: #00232b; font-size: 10px; font-weight: 900; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }

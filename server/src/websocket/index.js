@@ -114,6 +114,9 @@ export function attachGateway(wss, { auth, db, rooms, social, matchmaker, getCon
 
           case 'leave_room': {
             rooms.leaveRoom(user.id);
+            // quitter une partie annule aussi toute file d'attente résiduelle:
+            // sinon un match fantôme démarrait et re-lançait le jeu via match_found
+            matchmaker.cancel(user.id);
             break;
           }
 

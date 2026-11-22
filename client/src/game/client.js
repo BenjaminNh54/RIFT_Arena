@@ -308,6 +308,8 @@ class GameClient {
       }
       if (best && bd < (FIGHTER_MAP[local.f]?.attack?.range ?? 400)) {
         this.input.aim = Math.atan2(best.y - local.y, best.x - local.x);
+        // tirs courbes: atterrissent sur l'ennemi visé
+        this.input.aimDist = Math.min(bd, FIGHTER_MAP[local.f]?.attack?.range ?? 400);
       }
     }
     if (s.autoAttack && !this.input.aiming) {
@@ -496,8 +498,8 @@ export function attachHudUpdate(hud, root) {
       const dead = !!local.d;
       q('hud-death').classList.toggle('hidden', !dead);
       if (dead) {
-        const rs = local.respawnIn ?? 3;
-        q('hud-respawn').textContent = Math.max(1, Math.ceil(rs));
+        // timer réel envoyé par le serveur (avant: figé à 3s)
+        q('hud-respawn').textContent = Math.max(1, Math.ceil(local.ri ?? 3));
       }
     }
     // teammates
@@ -512,10 +514,11 @@ export function attachHudUpdate(hud, root) {
 function renderTeam(container, ents, team) {
   container.innerHTML = '';
   for (const e of ents) {
-    if (e.d) continue;
+    // morts affichés grisés à 0% (ils disparaissaient avant — on perdait le compte d'équipe)
     const row = h('div', { class: `tm-row ${e.d ? 'tm-dead' : ''}` },
       h('b', { text: e.n ?? '' }),
-      h('div', { class: `bar ${team === 'A' ? 'blue' : 'red'} tm-bar` }, h('i', { style: { width: `${Math.max(0, e.hp / e.mhp * 100)}%` } })));
+      h('div', { class: `bar ${team === 'A' ? 'blue' : 'red'} tm-bar` },
+        h('i', { style: { width: e.d ? '0%' : `${Math.max(0, e.hp / e.mhp * 100)}%` } })));
     container.append(row);
   }
 }
@@ -531,7 +534,7 @@ function drawMinimap(cv, st, map, local) {
   ctx.fillStyle = 'rgba(120,150,255,0.35)';
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
-      const t = map.grid[y][x];
+      const t = map.grid[y]?.[x];
       if (t === 1) ctx.fillRect(x * 64 * sx, y * 64 * sy, Math.ceil(64 * sx), Math.ceil(64 * sy));
       else if (t === 3) { ctx.fillStyle = 'rgba(74,222,128,0.35)'; ctx.fillRect(x * 64 * sx, y * 64 * sy, Math.ceil(64 * sx), Math.ceil(64 * sy)); ctx.fillStyle = 'rgba(120,150,255,0.35)'; }
     }

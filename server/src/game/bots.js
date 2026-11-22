@@ -9,7 +9,7 @@ export function runBots(room) {
     if (room.now < ai.decideAt) { ent.lastInput.fire = false; continue; }
     ai.decideAt = room.now + 120 + Math.random() * 120;
 
-    const input = { dx: 0, dy: 0, aim: ent.angle, fire: false, wantSuper: false, wantAbility: false, wantKick: false };
+    const input = { dx: 0, dy: 0, aim: ent.angle, aimDist: 0, fire: false, wantSuper: false, wantAbility: false, wantKick: false };
     const atk = ent.fighter.attack;
     const enemy = pickTarget(room, ent, atk.range * 2.2);
 
@@ -20,12 +20,16 @@ export function runBots(room) {
       const d = Math.hypot(enemy.x - ent.x, enemy.y - ent.y);
       const lead = 0.05 + Math.random() * 0.1; // aim noise = fair difficulty
       input.aim = Math.atan2(enemy.y - ent.y, enemy.x - ent.x) + lead;
-      // engage / kite
-      const ideal = atk.type === 'melee' ? atk.range * 0.6 : atk.range * (ent.fighterId === 'vex' ? 0.85 : 0.7);
+      // les tirs courbes atterrissent sur l'ennemi, pas toujours à portée max
+      input.aimDist = Math.min(d, atk.range);
+      // engage / kite: approche, strafe, ne recule QUE très proche (avant: fuir dès 70% du
+      // range → les tireurs passaient leur temps à fuir dos aux murs sans jamais tirer)
+      const ideal = atk.type === 'melee' ? atk.range * 0.6 : atk.range * 0.62;
+      const fleeAt = atk.type === 'melee' ? 0 : atk.range * 0.45;
       if (!obj.handled) {
         if (d > ideal + 30) { input.dx = Math.cos(input.aim); input.dy = Math.sin(input.aim); }
-        else if (d < ideal - 60 && atk.type !== 'melee') { input.dx = -Math.cos(input.aim); input.dy = -Math.sin(input.aim); }
-        else if (Math.random() < 0.3) { // strafe
+        else if (atk.type !== 'melee' && d < fleeAt) { input.dx = -Math.cos(input.aim); input.dy = -Math.sin(input.aim); }
+        else if (Math.random() < 0.35) { // strafe
           const s = Math.random() < 0.5 ? 1 : -1;
           input.dx = Math.cos(input.aim + Math.PI / 2) * s;
           input.dy = Math.sin(input.aim + Math.PI / 2) * s;

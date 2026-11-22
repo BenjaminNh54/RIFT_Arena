@@ -190,6 +190,60 @@ même match (timer continu).
 
 ---
 
+## 19. RONDE 6 — Gameplay réel, textures Brawl Stars, disposition tous appareils
+
+### Audit complet du code de jeu (3 500 lignes lus une à une) — 13 bugs corrigés
+
+| # | Gravité | Fichier | Bug | Correctif |
+|---|---------|---------|-----|-----------|
+| 35 | **Critique gameplay** | engine.js | `stepEnt` excluait les **bots** (`kind !== 'player' && kind !== 'boss'` → return) : les bots étaient des **statues** — jamais déplacés, jamais tirés, jamais rechargés. | Les bots sont steppés comme les joueurs. |
+| 36 | **Critique combat** | combat.js | `stepLob` ré-insérait le projectile dans `room.projectiles` **pendant** son propre `for-of` : chaque tir courbé explosait **10-15 fois dans le même tick** (dégâts ×15) ou disparaissait. | Géré inline, une seule explosion, falloff conservé. |
+| 37 | **Critique feel** | combat.js | Les tirs courbes (lob) atterrissaient **toujours à portée max** (`Math.min(range, range)`) — impossible de toucher plus près. | Nouveau champ `aimDist` (souris PC, drag mobile, auto-aim, bots) → le tir atterrit LÀ où on vise. Vérifié : 688/700 dmg sur cible à 400px. |
+| 38 | Majeur | combat.js | La mêlée frappait **à travers les murs** (pas de LOS). | `lineBlocked` ajouté. |
+| 39 | Majeur | bots.js | Le kite fuyait dès 70% de la portée : les tireurs passaient leur temps à fuir **dos aux murs** sans jamais tirer (LOS bloquée 197/200 ticks). | Fuite seulement à <45% de portée + strafe. |
+| 40 | Majeur | input.js | Visée mobile codée en dur `window.innerHeight-60` au lieu du **centre réel du bouton** → angle systématiquement faux. | `getBoundingClientRect()`. |
+| 41 | Majeur | websocket | « Abandonner » ne cancelait pas la file d'attente résiduelle → **match fantôme** démarré + `match_found` relançait le jeu derrière le lobby. | `leave_room` → `matchmaker.cancel`. |
+| 42 | Majeur HUD | engine.js/client.js | Le timer de réapparition était **figé à 3s** (le serveur n'envoyait pas `respawnAt`). | Champ `ri` dans le snapshot. |
+| 43 | HUD | client.js | Les coéquipiers morts **disparaissaient** de la liste (plus de compte d'équipe). | Affichés grisés à 0%. |
+| 44 | Moteur | engine.js | Respawn ne réinitialisait pas speedMult/reveal/buff/pierce. | Réinitialisés. |
+| 45 | Moteur | engine.js | Ids de projectiles de tourelle « tNaN » (`++undefined`). | Compteur propre. |
+| 46 | Rendu | renderer.js | Les ennemis dans les buissons restaient **totalement visibles** (le commentaire promettait l'inverse). | Buissons dessinés **au-dessus** des combattants (on s'y cache comme dans BS). |
+| 47 | Robustesse | client.js | Crashes possibles: `local` null dans input.update, `map.grid[y][x]` sans garde (minimap). | Gardes ajoutées. |
+
+### Textures refaites façon Brawl Stars (renderer réécrit)
+
+- Palettes **vives** pour les 8 thèmes (au lieu des tons sombres ternes), sol en dalles à deux tons
+  avec taches claires, speckles et joints de dalles.
+- **Murs 2.5D** : face avant sombre + face supérieure claire + reflet + contour sombre — comme la
+  référence fournie.
+- **Caisses en bois** à croisillons X, clous et ombre ; **buissons** en amas à deux tons qui
+  ondulent légèrement ; **eau** à vaguelettes ; **pièges** à pointes de lave ; portails à dégradé.
+- **Ombres elliptiques** sous chaque combattant/tourelle/ballon, anneaux d'équipe, **noms + barres
+  de vie en capsule** façon BS, yeux dessinés, **dégâts flottants** (`-1150`) avec contour noir.
+- **Pads d'apparition** colorés par équipe sur la carte.
+- Contrôles tactiles agrandis façon BS : joystick 148px, bouton d'attaque orange 96px, super/capacité 66px.
+
+### Disposition vérifiée sur trois tailles (captures)
+
+- **375px** : hero card + gros bouton JOUER orange pleine largeur + cartes dessous + nav 8 entrées
+  (labels resserrés à ≤430px pour ne pas se chevaucher).
+- **768px** : même disposition, nav équilibrée, bouclier admin visible.
+- **1280px** : hero à gauche, colonne droite (Pass/Event), barre du bas — la structure de la
+  capture Brawl Stars fournie.
+- **HUD en partie 812×375 (paysage)** : gros joystick translucide à gauche, boutons d'attaque
+  orange + super à droite — disposition identique à l'image de référence.
+
+### Vérifications (simulateur + navigateur)
+
+- Simulation headless 3v3 de 60s : **28 441 dégâts, 5 kills, cristaux ramassés** — les bots
+  jouent vraiment (avant : 0 dégât, 0 déplacement).
+- Élimination headless : scores monotones croissants (jamais de reset), fin par target 10.
+- Match complet en navigateur (élimination 3v3) : 0-0 → 3-9 → **B atteint 10 → écran de
+  résultats DÉFAITE** — checkEnd, récompenses et résultats opérationnels, zéro erreur console.
+- Matchs multi-modes testés : Crystal Rush, Élimination. Régression : **50/50 tests serveur**.
+
+---
+
 ## 1. Bugs trouvés
 
 | # | Gravité | Bug |

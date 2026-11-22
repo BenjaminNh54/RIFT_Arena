@@ -105,8 +105,9 @@ export class GameRoom {
     const dx = Math.max(-1, Math.min(1, +input.dx || 0));
     const dy = Math.max(-1, Math.min(1, +input.dy || 0));
     const aim = Math.max(-Math.PI * 4, Math.min(Math.PI * 4, +input.aim || 0));
+    const aimDist = Math.max(0, Math.min(2000, +input.aimDist || 0));
     ent.inputSeq = +input.seq || ent.inputSeq + 1;
-    ent.lastInput = { dx, dy, aim, fire: !!input.fire };
+    ent.lastInput = { dx, dy, aim, aimDist, fire: !!input.fire };
     if (input.fireAngle !== undefined) ent.angle = aim;
     if (input.wantSuper) this.useSuper(ent);
     if (input.wantAbility) this.useAbility(ent);
@@ -147,8 +148,8 @@ export class GameRoom {
   }
 
   stepEnt(ent, dt) {
-    if (ent.kind !== 'player' && ent.kind !== 'boss') return;
-    if (ent.kind === 'boss') return; // boss handled by mode module
+    // joueurs ET bots (les bots étaient exclus ici: statues immobiles qui ne tiraient jamais)
+    if (ent.kind !== 'player' && ent.kind !== 'bot') return;
     if (ent.dead) {
       const allow = this.mode.allowRespawn?.(this, ent) ?? (this.mode.respawn ?? true);
       if (this.now >= ent.respawnAt && allow) this.respawn(ent);
@@ -223,7 +224,7 @@ export class GameRoom {
         ent.acc = 0;
         const ang = Math.atan2(target.y - ent.y, target.x - ent.x);
         this.projectiles.push({
-          id: `t${++this._tid ?? (this._tid = 1)}`, kind: 'bullet', owner: ent.id, team: ent.team,
+          id: `t${this._tid = (this._tid ?? 0) + 1}`, kind: 'bullet', owner: ent.id, team: ent.team,
           x: ent.x, y: ent.y, vx: Math.cos(ang) * ent.turret.speed, vy: Math.sin(ang) * ent.turret.speed,
           dmg: ent.turret.damage, heal: 0, radius: 6, range: ent.turret.range, traveled: 0,
           pierce: 0, overWalls: false, homing: null, color: '#facc15', fighter: 'patch',
@@ -368,6 +369,9 @@ export class GameRoom {
     ent.stunUntil = 0;
     ent.carrying = 0;
     ent.hasBall = false;
+    ent.speedMult = 1; ent.speedUntil = 0;
+    ent.revealUntil = 0; ent.pierceNext = 0;
+    ent.buffNextDamageMult = null;
     this.fx({ k: 'respawn', x: ent.x, y: ent.y, id: ent.id });
   }
 
@@ -535,7 +539,9 @@ export class GameRoom {
           id: e.id, kind: e.kind, f: e.fighterId, n: e.name, team: e.team,
           x: Math.round(e.x), y: Math.round(e.y), a: Math.round(e.angle * 100) / 100,
           hp: Math.round(e.hp), mhp: e.maxHp, sh: Math.round(e.shield),
-          d: e.dead ? 1 : 0, am: Math.round(e.ammo * 10) / 10, ama: e.maxAmmo,
+          d: e.dead ? 1 : 0,
+          ri: e.dead ? Math.max(0, Math.ceil((e.respawnAt - this.now) / 1000)) : 0,
+          am: Math.round(e.ammo * 10) / 10, ama: e.maxAmmo,
           sc: Math.round(e.superCharge * 100) / 100, cr: e.carrying ?? 0, ball: e.hasBall ? 1 : 0,
           bot: e.kind === 'bot' ? 1 : 0, dc: e.disconnected ? 1 : 0,
           ab: e.abilityUses,
