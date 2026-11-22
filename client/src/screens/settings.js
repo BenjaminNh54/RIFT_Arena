@@ -2,7 +2,7 @@
 import { h, toast, confirmBox, pill } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 import { api, errText, disconnectWs } from '../network/api.js';
-import { state, settings, saveSettings, isMobileLayout } from '../state.js';
+import { state, settings, saveSettings, isMobileLayout, isStaff } from '../state.js';
 import { navigate } from '../router.js';
 import { sfx } from '../game/audio.js';
 

@@ -53,3 +53,17 @@
 /* Prevent text selection & pull-to-refresh during play */
 .game-root { overscroll-behavior: none; }
 body.in-game { overflow: hidden; }
+
+/* Rotation horizontale (mobile portrait) — JS décide de la visibilité (sessionStorage) */
+#rotate-hint {
+  position: fixed; inset: 0; z-index: 300;
+  background: linear-gradient(180deg, rgba(10, 15, 30, 0.98), rgba(16, 23, 49, 0.98));
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+#rotate-hint .rh-box { text-align: center; max-width: 340px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+#rotate-hint .rh-ic { width: 52px; height: 52px; color: var(--cyan); animation: rh-tilt 2.4s ease-in-out infinite; }
+@keyframes rh-tilt { 0%, 18% { transform: rotate(0deg); } 45%, 72% { transform: rotate(90deg); } 100% { transform: rotate(0deg); } }
+#rotate-hint h3 { font-size: 15px; letter-spacing: 0.16em; }
+#rotate-hint p { color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+/* en partie, la rotation est obligatoire: pas de bouton « continuer » */
+body.in-game #rotate-dismiss { display: none !important; }

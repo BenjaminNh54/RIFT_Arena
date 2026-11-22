@@ -165,34 +165,45 @@ function hexA2(c, a) {
 }
 
 function describeAttack(a) {
-  const kind = { projectile: 'projectile rapide', spread: `projectiles multiples (x${a.count})`, melee: 'coup de mêlée en arc', lob: 'obus en cloche (passe les murs)', homing: 'drone à tête chercheuse (soigne les alliés traversés)' }[a.type];
+  let kind = 'attaque';
+  switch (a.type) {
+    case 'projectile': kind = 'projectile rapide'; break;
+    case 'spread': kind = `projectiles multiples (x${a.count})`; break;
+    case 'melee': kind = 'coup de mêlée en arc'; break;
+    case 'lob': kind = 'obus en cloche (passe les murs)'; break;
+    case 'homing': kind = 'drone à tête chercheuse (soigne les alliés traversés)'; break;
+  }
   return `${kind} — ${fmt(a.damage)} dégâts, portée ${fmt(a.range)}, ${a.ammo} munitions (rechargement ${a.reload / 1000}s).`;
 }
 function describeSuper(s) {
-  const map = {
-    zone: `Zone électrique ${s.zone.radius}px infligeant ${s.zone.dps}/s pendant ${s.zone.duration / 1000}s + vitesse augmentée`,
-    reveal: 'Révèle tous les ennemis 8s ; la prochaine attaque perce les murs',
-    shockwave: `Onde de choc ${s.wave.radius}px : ${fmt(s.wave.damage)} dégâts, repousse et étourdit`,
-    dash: `Dash de ${s.dash.distance}px, l'attaque suivante inflige x${s.dash.buff?.nextDamageMult ?? 1.3}`,
-    turret: `Tourelle ${s.turret.hp} PV, ${fmt(s.turret.damage)} dégâts/tir pendant ${s.turret.lifetime / 1000}s`,
-    drone: `Drone gardien : soigne ${s.drone.healPerSec} PV/s aux alliés proches pendant ${s.drone.duration / 1000}s`,
-  };
-  return map[s.special] ?? 'Super';
+  // switch (et non un objet map): un objet littéral évalue TOUTES les branches,
+  // donc s.wave.radius plantait pour un super 'zone' qui n'a pas de wave
+  switch (s.special) {
+    case 'zone': return `Zone électrique ${s.zone.radius}px infligeant ${s.zone.dps}/s pendant ${s.zone.duration / 1000}s + vitesse augmentée`;
+    case 'reveal': return 'Révèle tous les ennemis 8s ; la prochaine attaque perce les murs';
+    case 'shockwave': return `Onde de choc ${s.wave.radius}px : ${fmt(s.wave.damage)} dégâts, repousse et étourdit`;
+    case 'dash': return `Dash de ${s.dash.distance}px, l'attaque suivante inflige x${s.dash.buff?.nextDamageMult ?? 1.3}`;
+    case 'turret': return `Tourelle ${s.turret.hp} PV, ${fmt(s.turret.damage)} dégâts/tir pendant ${s.turret.lifetime / 1000}s`;
+    case 'drone': return `Drone gardien : soigne ${s.drone.healPerSec} PV/s aux alliés proches pendant ${s.drone.duration / 1000}s`;
+    default: return 'Super';
+  }
 }
 function abilityDesc(a) {
-  return {
-    reload: `Recharge ${a.amount} munition(s) instantanément`,
-    dash: `Petit dash de ${a.distance}px`,
-    shield: `Bouclier de ${fmt(a.amount)} pendant ${a.duration / 1000}s`,
-    heal: `Soigne ${fmt(a.amount)} PV (+ répare la tourelle)`,
-    buff: 'Prochaine attaque renforcée (+40%)',
-  }[a.type] ?? 'Capacité';
+  switch (a.type) {
+    case 'reload': return `Recharge ${a.amount} munition(s) instantanément`;
+    case 'dash': return `Petit dash de ${a.distance}px`;
+    case 'shield': return `Bouclier de ${fmt(a.amount)} pendant ${a.duration / 1000}s`;
+    case 'heal': return `Soigne ${fmt(a.amount)} PV (+ répare la tourelle)`;
+    case 'buff': return 'Prochaine attaque renforcée (+40%)';
+    default: return 'Capacité';
+  }
 }
 function passiveDesc(p) {
-  return {
-    speed_on_hit: `Vitesse +${Math.round((p.mult - 1) * 100)}% pendant 2s après avoir touché`,
-    shield_regen: `Bouclier qui se régénère (${p.rate}/s jusqu'à ${fmt(p.max)}) hors combat`,
-    ally_speed: `Alliés proches (rayon ${p.radius}) gagnent +${Math.round((p.mult - 1) * 100)}% vitesse`,
-    adrenaline: `Vitesse +${Math.round((p.mult - 1) * 100)}% quand les PV passent sous ${p.below * 100}%`,
-  }[p.type] ?? 'Passif';
+  switch (p.type) {
+    case 'speed_on_hit': return `Vitesse +${Math.round((p.mult - 1) * 100)}% pendant 2s après avoir touché`;
+    case 'shield_regen': return `Bouclier qui se régénère (${p.rate}/s jusqu'à ${fmt(p.max)}) hors combat`;
+    case 'ally_speed': return `Alliés proches (rayon ${p.radius}) gagnent +${Math.round((p.mult - 1) * 100)}% vitesse`;
+    case 'adrenaline': return `Vitesse +${Math.round((p.mult - 1) * 100)}% quand les PV passent sous ${p.below * 100}%`;
+    default: return 'Passif';
+  }
 }

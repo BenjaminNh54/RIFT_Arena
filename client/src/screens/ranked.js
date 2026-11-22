@@ -1,5 +1,5 @@
 // RIFT ARENA — Ranked screen (league badge, RP, queue ranked, leaderboard)
-import { h, toast, fmt } from '../components/ui.js';
+import { h, toast, fmt, modal } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 import {api,errText} from '../network/api.js';
 import { state } from '../state.js';

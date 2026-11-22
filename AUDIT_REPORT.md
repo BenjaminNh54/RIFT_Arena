@@ -71,9 +71,66 @@ La page ne rendait rien car une erreur de liaison de modules ES bloque tout le g
 - MySQL rejoué après le fix warning : `ALL CHECKS PASSED ✅` sans aucun warning.
 - Régression : 50/50 tests serveur verts ; `node --check` sur les 10 fichiers client touchés.
 
-**Important pour les joueurs existants** : le service worker passe en `v2` — les navigateurs qui ont
-visité l'ancienne version purgeront le précache périmé à l'activation ; une simple réouverture de
-l'onglet suffit après le redéploiement.
+
+
+---
+
+## 17. RONDE 4 — Réglages cassés, fiches combattants, design PC compact, rotation mobile, fluidité
+
+Trace console en production (16:01) : `render failed settings — ReferenceError: isStaff is not
+defined (settings.js:15)`. Bonne nouvelle contenue dans cette trace : le routeur naviguait et le
+shell se construisait → la ronde 3 est bien déployée (vérifié en direct sur
+`rift-arena-uwyj.onrender.com/src/app.js` : `initRouter(content)` + import `isStaff` présents).
+
+### Bugs corrigés
+
+| # | Gravité | Bug | Correctif |
+|---|---------|-----|-----------|
+| 27 | **Bloquant (écran Réglages)** | `settings.js:15` utilisait `isStaff()` sans l'importer (référence nue invisible pour l'audit d'imports). | Import ajouté depuis `state.js`. |
+| 28 | Majeur (latent) | `renderer.js` utilisait `drawFighter()` sans l'importer — plantait au premier rendu concerné. | Import depuis `components/ui.js`. |
+| 29 | Majeur (latent) | `ranked.js` utilisait `modal()` sans l'importer. | Import ajouté. |
+| 30 | **Bloquant (fiches combattants)** | `describeSuper/abilityDesc/passiveDesc/describeAttack` construisaient un **objet map** dont toutes les branches (template literals) s'évaluaient immédiatement : pour VOLT (super `zone`), la branche `s.wave.radius` plantait → « Détail combattant » vide + TypeError. | Les 4 fonctions réécrites en `switch` (évaluation paresseuse) ; vérifié : les **6** fiches (VOLT/VEX/BRAKK/NYX/KIRO/PATCH) se rendent avec stats et descriptions, zéro erreur. |
+
+**Nouvel outil** : `client-bare-audit.py` — détecte toute fonction cross-module appelée sans être
+importée (la classe exacte des bugs 27-29). Client : **0 référence nue, 0 import manquant** (34 modules).
+
+### Design PC compact (demande « tous les menus sont trop gros »)
+
+Nouveau `styles/compact.css` (chargé en dernier) : couche de densité `@media (min-width: 1101px)` —
+topbar 58→50px, sidebar 84→68px, boutons (JOUER ~58→40px), paddings panneaux/cartes/modales,
+titres d'écran 20→16px, pill/badges/tabulaires réduits ; largeur de contenu plafonnée (1320px,
+1460px au-delà de 1600px) pour éviter le vide sur très grands écrans. Mesuré au navigateur :
+topbar 50px, sidebar 68px, bouton JOUER 40px. Identité visuelle conservée.
+
+### Rotation horizontale mobile (demande explicite)
+
+Overlay plein écran `#rotate-hint` en **portrait sur écran tactile** (icône animée + « TOURNE TON
+TÉLÉPHONE » + bouton « Continuer en vertical » mémorisé pour la session en sessionStorage).
+En partie (`body.in-game`) le bouton est masqué : la rotation est obligatoire. Le HUD paysage
+existant (`max-height: 480px landscape`) reste actuel. Détection tactile identique à
+`isMobileLayout()` (`pointer: coarse` || `ontouchstart` || `maxTouchPoints`). Validé au navigateur :
+masqué sur desktop, dismissal + retour paysage OK, visuel capturé.
+
+### Fluidité (« optimise à fond »)
+
+- **lobby.js** : le hero redessinait le canvas à chaque frame avec `cv.width = clientWidth * devicePixelRatio`
+  (reallocation mémoire + reflow forcé 60×/s, DPR brut 3× sur mobile haut de gamme) pour un dessin
+  **statique** (le `bob` calculé n'était jamais appliqué). → dessin unique + redraw uniquement au
+  resize, DPR plafonné à 2.
+- `.screen` : `contain: layout style paint` + `will-change` transitoire (un seul écran en DOM à la fois) ;
+  `backface-visibility` sur boot/modal/toast.
+- Le jeu plafonnait déjà son DPR à 2 (inchangé) ; aucun `backdrop-filter` dans le projet (déjà fluide).
+
+### Vérification réelle (Chrome 158 headless, serveur local)
+
+Sweep complet sans AUCUNE erreur console : 7 écrans de nav (Lobby, Persos, Events, Clan, Amis,
+Boutique, Missions) + Réglages + Profil + Pass de saison + Missions détaillées + liste de clans +
+détail event + **6 fiches combattants**. Régression : **50/50 tests serveur verts**, `node --check`
+sur tous les fichiers touchés.
+
+**Note déploiement** : après avoir poussé cette version, les joueurs n'ont rien à faire de spécial —
+le SW `v2` purge l'ancien cache ; si l'onglet était resté ouvert pendant l'ancien SW `v1`, une
+simple fermeture/réouverture de l'onglet suffit.
 
 ---
 

@@ -265,4 +265,24 @@ onWs('match_found', (m) => {
 });
 export { pushNotification };
 
+// rotation horizontale (mobile): overlay en portrait sur écran tactile,
+// ignoré pour la session via « Continuer en vertical » — forcé en partie (body.in-game)
+const rotateHint = document.getElementById('rotate-hint');
+if (rotateHint) {
+  const mqlOri = window.matchMedia('(orientation: portrait)');
+  const mqlCoarse = window.matchMedia('(pointer: coarse)');
+  // détection tactile identique à isMobileLayout(): pointer coarse OU ontouchstart
+  const isTouch = () => mqlCoarse.matches || 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const refreshRotate = () => {
+    const show = mqlOri.matches && isTouch() && sessionStorage.getItem('ra_rotate_free') !== '1';
+    rotateHint.classList.toggle('hidden', !show);
+  };
+  document.getElementById('rotate-dismiss')?.addEventListener('click', () => {
+    sessionStorage.setItem('ra_rotate_free', '1');
+    refreshRotate();
+  });
+  mqlOri.addEventListener?.('change', refreshRotate);
+  refreshRotate();
+}
+
 boot();

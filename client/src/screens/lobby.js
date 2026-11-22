@@ -97,23 +97,22 @@ export function renderLobby(el) {
   grid.append(side);
   el.append(grid);
 
-  // animate hero fighter
-  let raf; let t0 = performance.now();
+  // hero fighter: static portrait — draw once, redraw on resize only.
+  // (l'ancienne boucle rAF réallouait cv.width à chaque frame: reallocation + reflow 60x/s)
   const fighter = selectedFighter();
-  function loop(t) {
+  const heroDpr = Math.min(2, devicePixelRatio ?? 1);
+  let heroW = 0, heroH = 0;
+  function drawHero() {
+    const w = Math.round(cv.clientWidth * heroDpr), hh = Math.round(cv.clientHeight * heroDpr);
+    if (!w || !hh) return;
+    if (w !== heroW || hh !== heroH) { heroW = w; heroH = hh; cv.width = w; cv.height = hh; }
     const ctx = cv.getContext('2d');
-    const w = cv.width = cv.clientWidth * devicePixelRatio;
-    const hh = cv.height = cv.clientHeight * devicePixelRatio;
-    ctx.clearRect(0, 0, w, hh);
-    if (fighter) {
-      const bob = Math.sin((t - t0) / 700) * 8;
-      drawFighter(cv, fighter, { size: Math.min(w, hh) * 0.62 });
-      // idle float via CSS-ish transform on next draw: cheaper to just redraw with offset
-    }
-    raf = requestAnimationFrame(loop);
+    ctx.clearRect(0, 0, heroW, heroH);
+    if (fighter) drawFighter(cv, fighter, { size: Math.min(heroW, heroH) * 0.62 });
   }
-  raf = requestAnimationFrame(loop);
-  el._cleanup = () => cancelAnimationFrame(raf);
+  drawHero();
+  window.addEventListener('resize', drawHero, { passive: true });
+  el._cleanup = () => window.removeEventListener('resize', drawHero);
 
   // matchmaking result handler
   onWs('match_found', () => closeQueueOverlay());

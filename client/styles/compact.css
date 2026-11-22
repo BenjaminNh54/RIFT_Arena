@@ -1,0 +1,106 @@
+/* RIFT ARENA — desktop density layer (≥1101px): menus compacts, lisibilité maximale.
+   Chargé en DERNIER: surcharge systématique des tailles "grandes" sur grand écran. */
+
+@media (min-width: 1101px) {
+  :root {
+    --topbar-h: 50px;
+    --sidebar-w: 68px;
+    --radius: 12px;
+  }
+
+  /* Shell */
+  .topbar { gap: 10px; padding: 0 12px; }
+  .topbar .logo { font-size: 13px; letter-spacing: 0.15em; }
+  .topbar .logo svg { width: 19px; height: 19px; }
+  .profile-chip { gap: 8px; padding: 4px 9px 4px 4px; }
+  .avatar { width: 30px; height: 30px; font-size: 12.5px; }
+  .avatar svg { width: 17px; height: 17px; }
+  .profile-chip .pname { font-size: 12px; }
+  .profile-chip .psub { font-size: 9.5px; }
+  .iconbtn { width: 33px; height: 33px; border-radius: 8px; }
+  .iconbtn svg { width: 16px; height: 16px; }
+  #toasts { top: 58px; }
+
+  /* Sidebar */
+  .sidebar { padding: 10px 6px; gap: 4px; }
+  .nav-item { width: 54px; height: 46px; gap: 2px; font-size: 8.5px; border-radius: 8px; }
+  .nav-item svg { width: 17px; height: 17px; }
+  .nav-item.active::before { left: -7px; top: 10px; bottom: 10px; }
+
+  /* Content frame: densité + largeur raisonnable sur très grands écrans */
+  .screen-pad { padding: 12px 18px; max-width: 1320px; margin: 0 auto; width: 100%; }
+  .screen-head { gap: 10px; margin-bottom: 10px; }
+  .screen-head h2 { font-size: 16px; letter-spacing: 0.12em; }
+  .section-title { font-size: 12.5px; letter-spacing: 0.12em; margin: 13px 0 7px; }
+
+  /* Panels / cards */
+  .panel { padding: 11px 12px; }
+  .panel-title { font-size: 11.5px; margin-bottom: 8px; }
+  .card { padding: 10px; }
+  .grid { gap: 10px; }
+  .list-row { padding: 7px 10px; margin-bottom: 6px; gap: 10px; }
+  .stat-row { padding: 5px 0; font-size: 12.5px; }
+  .empty { padding: 24px 10px; }
+  .empty svg { width: 28px; height: 28px; }
+
+  /* Buttons */
+  .btn { padding: 7px 14px; font-size: 12.5px; gap: 7px; }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.play { font-size: 14.5px; padding: 11px 34px; }
+  .btn.small { padding: 5px 10px; font-size: 11px; }
+
+  /* Tabs / inputs */
+  .tabs { margin-bottom: 10px; }
+  .tab { padding: 7px 13px; font-size: 12.5px; }
+  input, textarea, select { padding: 7px 10px; font-size: 13.5px; }
+  .form-row { margin-bottom: 10px; }
+  .form-row label { font-size: 11px; }
+
+  /* Pills / badges */
+  .pill { padding: 3px 8px; font-size: 12px; gap: 5px; }
+  .pill svg { width: 13px; height: 13px; }
+  .badge { font-size: 9.5px; padding: 2px 6px; }
+
+  /* Modal */
+  .modal { width: min(500px, 100%); }
+  .modal-head { padding: 12px 14px 6px; font-size: 14.5px; }
+  .modal-body { padding: 10px 14px; }
+  .modal-foot { padding: 10px 14px 12px; }
+
+  /* Toast */
+  .toast { padding: 8px 12px; font-size: 12.5px; }
+
+  /* Lobby */
+  .lobby-grid { gap: 10px; padding: 12px 14px; }
+  .hero-info { left: 16px; top: 13px; }
+  .hero-info .fighter-name { font-size: clamp(20px, 2.4vw, 30px); }
+  .hero-bottom { left: 16px; right: 16px; bottom: 14px; gap: 10px; }
+  .hero-mode { padding: 6px 12px; }
+  .hero-mode .m-name { font-size: 13px; }
+  .lobby-hero { min-height: 0; }
+  .lobby-grid > .lobby-hero { grid-row: 1 / 3; }
+
+  /* Screens spécifiques */
+  .event-card h3 { font-size: 15px; }
+  .event-card .ec-desc { font-size: 12px; }
+  .rank-league { font-size: 20px; }
+  .lb-row { padding: 6px 10px; font-size: 12.5px; }
+  .member-row { padding: 7px 10px; font-size: 12.5px; }
+  .mission-card .m-desc { font-size: 12.5px; }
+  .fighter-card .fc-name { font-size: 13px; padding: 6px 8px 2px; }
+  .fighter-card .fc-class { font-size: 9.5px; padding: 0 8px 6px; }
+  .chat-msg { font-size: 12.5px; }
+  .bar { height: 7px; }
+}
+
+/* Très grands écrans: la densité ne devient pas une mer de vide */
+@media (min-width: 1600px) {
+  :root { --sidebar-w: 72px; }
+  .screen-pad { max-width: 1460px; }
+  .modal { width: min(560px, 100%); }
+}
+
+/* Fluidité: transitions GPU + isolement des écrans (le routeur n'a qu'un .screen en DOM) */
+.screen { will-change: opacity, transform; contain: layout style paint; }
+.screen.active { will-change: auto; }
+#boot, .modal, .toast { backface-visibility: hidden; }

@@ -1,6 +1,7 @@
 // RIFT ARENA — game renderer: procedural tile textures, vector entities, camera, effects
 import { FIGHTER_MAP } from '/shared/definitions/fighters.js';
 import { TILE } from '/shared/constants.js';
+import { drawFighter } from '../components/ui.js';
 
 const THEME = {
   neon:    { floor: ['#141c3a', '#18224a'], wall: '#2a3a7a', wallTop: '#4a5ab8', crate: '#7a5a2a', bush: '#1e9a5a', water: '#123a8a', hazard: '#c22a2a', portal: '#8a3adf', grid: 'rgba(80,110,255,0.08)' },
