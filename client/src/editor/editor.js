@@ -1,5 +1,6 @@
 // RIFT ARENA — map editor (community maps): paint, fill, rect, spawns, undo/redo, save/publish/test
-import { h, toast, modal, confirmBox, icon } from '../components/ui.js';
+import {h, toast, modal, confirmBox} from '../components/ui.js';
+import { icon } from '../components/icons.js';
 import { api, errText } from '../network/api.js';
 import { TILE } from '/shared/constants.js';
 import { validateMapData } from '/shared/validators/index.js';

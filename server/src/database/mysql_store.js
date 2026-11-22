@@ -43,12 +43,17 @@ export class MysqlStore {
       database: cfg.MYSQL_DATABASE,
       charset: 'utf8mb4_unicode_ci', // same collation as the schema tables (FK consistency)
       timezone: 'Z',                 // read/write Date objects in UTC
-      sessionVariables: { time_zone: '+00:00' }, // NOW() comparisons consistent with stored UTC
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       namedPlaceholders: false,
     });
+    // mysql2 has no `sessionVariables` option (that is mysqljs) — set the session
+    // timezone on each new pooled connection instead, so NOW() comparisons in SQL
+    // stay consistent with the UTC datetimes we store.
+    if (pool.pool && typeof pool.pool.on === 'function') {
+      pool.pool.on('connection', (conn) => conn.query("SET time_zone = '+00:00'"));
+    }
     await pool.query('SELECT 1'); // fail fast if unreachable
     return new MysqlStore(pool);
   }

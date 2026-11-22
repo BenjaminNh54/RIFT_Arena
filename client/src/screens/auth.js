@@ -62,8 +62,18 @@ export function renderAuth(el) {
     const username = uInput.value.trim();
     try {
       const bootstrapRequested = !keyRow.classList.contains('hidden') && !!keyInput.value.trim();
-      if (bootstrapRequested && mode === 'register') {
-        // ensure the account exists first, then promote it
+      if (mode === 'register' && !bootstrapRequested) {
+        // plain account creation: the register endpoint returns the session directly
+        const reg = await api.post('/api/auth/register', { username, password: pInput.value });
+        setToken(reg.token);
+        state.profile = reg.profile;
+        connectWs();
+        toast('Bienvenue dans RIFT ARENA', 'success');
+        buildShell();
+        return;
+      }
+      if (mode === 'register') {
+        // admin bootstrap: ensure the account exists first, then promote it
         try { await api.post('/api/auth/register', { username, password: pInput.value }); }
         catch (e) { if (e.code !== 'USERNAME_TAKEN') throw e; }
       }

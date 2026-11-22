@@ -2,7 +2,8 @@
 import { h, modal, toast, pill, fmt, timeLeft, drawFighter, confirmBox } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 import {api,errText,onWs,disconnectWs} from '../network/api.js';
-import { state, refreshProfile, isMobileLayout } from '../state.js';
+import { state, isMobileLayout } from '../state.js';
+import { refreshProfile } from '../app.js';
 import { navigate } from '../router.js';
 import { MODE_MAP } from '/shared/definitions/modes.js';
 import { FIGHTER_MAP } from '/shared/definitions/fighters.js';

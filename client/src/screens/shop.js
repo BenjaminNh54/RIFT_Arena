@@ -2,7 +2,8 @@
 import { h, modal, toast, fmt, pill } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 import { api, errText } from '../network/api.js';
-import { state, refreshProfile } from '../state.js';
+import { state } from '../state.js';
+import { refreshProfile } from '../app.js';
 import { FIGHTER_MAP } from '/shared/definitions/fighters.js';
 
 const KIND_FR = { skin: 'Skin', banner: 'Bannière', avatar: 'Avatar', title: 'Titre', effect: 'Effet', emote: 'Emote', chest: 'Coffre' };

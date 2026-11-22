@@ -1,8 +1,8 @@
 // RIFT ARENA — app bootstrap: splash, auth session, SPA shell (topbar + sidebar/bottom nav), realtime wiring
-import { state, settings, isMobileLayout, setToken } from './state.js';
+import { state, settings, isMobileLayout, setToken, isStaff } from './state.js';
 import { api, errText, connectWs, disconnectWs, onWs } from './network/api.js';
 import { initRouter, navigate, registerScreen, currentScreen } from './router.js';
-import { h, toast, svgIcon, icon, modal } from './components/ui.js';
+import { h, toast, modal } from './components/ui.js';
 import { icon as svgStr } from './components/icons.js';
 
 import { renderAuth } from './screens/auth.js';
@@ -103,6 +103,10 @@ export function buildShell() {
   shell.append(body);
   shell.append(buildBottomNav());
   app.append(shell, h('div', { class: 'rift-bg', style: { position: 'absolute', zIndex: -1 } }));
+
+  // re-point the router into the shell's screen root — without this, navigate()
+  // keeps rendering into #app and WIPES the freshly built shell
+  initRouter(content);
 
   refreshNav();
   navigate('lobby');

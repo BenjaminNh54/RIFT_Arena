@@ -1,5 +1,5 @@
 // RIFT ARENA — service worker: offline shell, versioned cache, network-first API
-const VERSION = 'rift-arena-v1';
+const VERSION = 'rift-arena-v2'; // v2: purge du precache v1 (ancien app.js sans buildShell corrigé)
 const SHELL = [
   '/', '/index.html', '/manifest.json',
   '/styles/main.css', '/styles/components.css', '/styles/lobby.css', '/styles/screens.css',

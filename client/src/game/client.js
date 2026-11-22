@@ -1,5 +1,6 @@
 // RIFT ARENA — game client: ws snapshots, interpolation, local prediction, HUD, results
-import { h, toast, fmt, icon } from '../components/ui.js';
+import {h, toast, fmt} from '../components/ui.js';
+import { icon } from '../components/icons.js';
 import { api, onWs, wsSend } from '../network/api.js';
 import { state, settings } from '../state.js';
 import { navigate } from '../router.js';

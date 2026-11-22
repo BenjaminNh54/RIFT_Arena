@@ -39,10 +39,41 @@ maintenant validé sur un MySQL 9.7.4 réel avec ses conditions exactes (collati
 `utf8mb4_0900_ai_ci`, mode strict). Au redéploiement, les logs doivent montrer
 `[auto-migrate] schema.sql appliqué (toutes les tables)` puis `[db] MYSQL CONNECTÉ`.
 
-**État de la base Alwaysdata existante** : le déploiement raté a créé `users` (avec la bonne
-collation) et `_migrations`, rien d'autre. Le schéma corrigé est idempotent : le redéploiement
-crée les ~30 tables manquantes sans toucher à `users`. Aucune action manuelle requise ; en cas
-de doute, vider les tables dans phpMyAdmin Alwaysdata suffit (aucune donnée de jeu réelle n'existe encore).
+
+
+---
+
+## 16. RONDE 3 — Page blanche côté client après redéploiement (corrigé et vérifié au navigateur réel)
+
+Le second déploiement (backend désormais vert : `MYSQL CONNECTÉ`, schéma complet, seeds OK) a
+revealed un client cassé : `Uncaught SyntaxError: … doesn't provide an export named: 'refreshProfile'`.
+La page ne rendait rien car une erreur de liaison de modules ES bloque tout le graphe d'entrée.
+
+| # | Gravité | Bug | Correctif |
+|---|---------|-----|-----------|
+| 20 | **Bloquant (rendu)** | 4 écrans (`shop`, `collection`, `profile`, `lobby`) importaient `refreshProfile` depuis `state.js` où il n'existe pas (il vit dans `app.js`). | Imports corrigés vers `../app.js` (le cycle écran→app existe déjà pour `auth.js`→`buildShell`). |
+| 21 | **Bloquant (rendu)** | `buildShell` référençait `isStaff` sans l'importer → `ReferenceError` au boot avec un token valide → shell jamais construit. | `isStaff` importé depuis `state.js`. |
+| 22 | **Bloquant (rendu)** | `initRouter(app)` est appelé au boot et jamais re-pointé : `buildShell` construisait le shell puis `navigate('lobby')` **effaçait le shell** en rendant dans `#app` (aucune erreur console — topbar/navigation absentes). | `initRouter(content)` appelé dans `buildShell` avant la première navigation. |
+| 23 | **Bloquant (UX)** | L'onglet Inscription **appelait `/api/auth/login`** (401 « Identifiants incorrects ») : le POST register n'était envoyé que dans le flux bootstrap admin. | Mode register = POST `/api/auth/register` dont la réponse `token+profile` est utilisée directement ; flux bootstrap admin inchangé. |
+| 24 | Majeur (rendu) | `editor.js` et `game/client.js` importaient `icon` depuis `ui.js` — il est exporté par `components/icons.js`. | Import corrigé vers `icons.js` (l'import mort d'`app.js` retiré). |
+| 25 | Mineur (déploiement) | `sessionVariables` n'est pas une option mysql2 (warning à chaque boot). | Remplacé par un hook `connection` sur le pool sous-jacent : `SET time_zone = '+00:00'` par connexion. |
+| 26 | Préventif | Service worker en `v1` avec précache de l'ancien `app.js`. | `VERSION` bumpée `v2` (purge du précache à l'activation) ; stratégie network-first inchangée. |
+
+**Vérifications réelles** :
+- **Audit statique du graphe de modules** (34 modules client+shared, 114 exports) : chaque import nommé
+  existe dans sa cible, tous les chemins (statiques, dynamiques, `/shared/*`) résolvent — **PROPRE ✅**
+  (script conservé : `scripts/client-import-audit.py`).
+- **Navigateur headless (Chrome 158) contre le serveur réel** : écran d'auth rendu ; inscription via
+  l'UI → 200 → **lobby complet avec shell** (7 items de nav, topbar, chip joueur, portefeuille 300
+  crédits / 50 tokens) ; navigation réelle vers **Boutique** (catalogue, rotation, Acheter), **Persos**
+  (roster VOLT/VEX/BRAKK/NYX), **Profil** (stats, personnalisation) — **zéro erreur console/page** ;
+  capture d'écran validée visuellement.
+- MySQL rejoué après le fix warning : `ALL CHECKS PASSED ✅` sans aucun warning.
+- Régression : 50/50 tests serveur verts ; `node --check` sur les 10 fichiers client touchés.
+
+**Important pour les joueurs existants** : le service worker passe en `v2` — les navigateurs qui ont
+visité l'ancienne version purgeront le précache périmé à l'activation ; une simple réouverture de
+l'onglet suffit après le redéploiement.
 
 ---
 

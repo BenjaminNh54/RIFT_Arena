@@ -2,7 +2,8 @@
 import { h, toast, fmt, pill, modal } from '../components/ui.js';
 import { icon } from '../components/icons.js';
 import { api, errText } from '../network/api.js';
-import { state, refreshProfile, saveSettings } from '../state.js';
+import { state, saveSettings } from '../state.js';
+import { refreshProfile } from '../app.js';
 import { navigate } from '../router.js';
 import { FIGHTER_MAP } from '/shared/definitions/fighters.js';
 
