@@ -1,4 +1,4 @@
-/* RIFT ARENA — lobby shell: topbar, sidebar, bottom nav, lobby layout */
+/* RIFT ARENA — lobby shell: topbar, bottom nav (Brawl Stars), lobby layout */
 
 .app-shell { height: 100%; display: flex; flex-direction: column; }
 
@@ -24,15 +24,7 @@
 /* Main layout */
 .app-body { flex: 1; display: flex; min-height: 0; position: relative; }
 
-/* Sidebar (desktop) */
-.sidebar {
-  width: var(--sidebar-w); flex: none;
-  display: flex; flex-direction: column; align-items: center; gap: 6px;
-  padding: 12px 8px;
-  background: rgba(10, 15, 30, 0.9);
-  border-right: 1px solid var(--line);
-  z-index: 15;
-}
+/* Nav items (barre du bas) */
 .nav-item {
   width: 58px; height: 56px;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -45,9 +37,10 @@
 .nav-item:hover { color: var(--text); background: rgba(53, 224, 255, 0.06); }
 .nav-item.active { color: var(--cyan); background: rgba(53, 224, 255, 0.1); }
 .nav-item.active::before {
-  content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px;
+  content: ""; position: absolute; left: 8px; right: 8px; top: 0; height: 3px;
   background: var(--cyan); border-radius: 2px;
 }
+.bottom-nav .nav-item.active::before { display: none; }
 .nav-item .notif { position: absolute; top: 6px; right: 10px; width: 9px; height: 9px; border-radius: 50%; background: var(--red); border: 2px solid var(--bg); }
 
 /* Content area */
@@ -112,23 +105,40 @@
 .notif-item { padding: 8px 6px; border-bottom: 1px dashed var(--line); font-size: 13px; display: flex; gap: 10px; align-items: center; }
 .notif-item:last-child { border-bottom: none; }
 
-/* Bottom navigation (mobile) */
+/* Bottom navigation permanente (façon Brawl Stars) — tous les écrans */
 .bottom-nav {
-  display: none;
-  flex: none; height: 62px;
+  display: flex; flex: none;
   background: rgba(10, 15, 30, 0.97);
   border-top: 1px solid var(--line);
   z-index: 30;
   padding-bottom: env(safe-area-inset-bottom);
 }
-.bottom-nav .bn-inner { display: flex; height: 62px; }
-.bottom-nav .nav-item { flex: 1; width: auto; height: 62px; border-radius: 0; }
+.bottom-nav .bn-inner { display: flex; width: 100%; height: 60px; max-width: 980px; margin: 0 auto; }
+.bottom-nav .nav-item { flex: 1; width: auto; height: 60px; border-radius: 0; gap: 4px; }
+.bottom-nav .nav-item svg { width: 22px; height: 22px; }
+.bottom-nav .nav-item span { font-size: 9px; }
 .bottom-nav .nav-item.active::before { display: none; }
+.bottom-nav .nav-item.active { background: rgba(53, 224, 255, 0.1); color: var(--cyan); }
+
+/* Menu « Plus » */
+.more-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.more-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px 8px; background: var(--bg-3); border: 1px solid var(--line);
+  clip-path: var(--chamfer-sm); font-size: 11px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.more-item:hover { color: var(--cyan); border-color: var(--line-strong); }
+.more-item svg { width: 22px; height: 22px; }
+.more-item.admin { color: var(--gold); border-color: rgba(251, 191, 36, 0.4); }
+.more-item.admin:hover { color: var(--gold); border-color: var(--gold); }
 
 @media (max-width: 860px) {
   :root { --topbar-h: 52px; }
-  .sidebar { display: none; }
-  .bottom-nav { display: block; }
+  .bottom-nav .bn-inner { height: 56px; }
+  .bottom-nav .nav-item { height: 56px; }
+  .bottom-nav .nav-item svg { width: 21px; height: 21px; }
   .lobby-grid { padding: 10px; gap: 10px; }
 }
 

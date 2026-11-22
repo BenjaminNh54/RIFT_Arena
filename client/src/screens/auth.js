@@ -23,6 +23,13 @@ export function renderAuth(el) {
 
   const uInput = h('input', { placeholder: 'Nom de joueur', maxlength: 16, autocomplete: 'username' });
   const pInput = h('input', { placeholder: 'Mot de passe', type: 'password', autocomplete: 'current-password' });
+  const codeInput = h('input', { placeholder: 'Laisse vide pour un compte joueur', type: 'password' });
+  const codeRow = h('div', { class: 'form-row' },
+    h('label', { text: 'Code admin (optionnel)' }),
+    codeInput,
+    h('div', { class: 'faint', style: { fontSize: '11px', lineHeight: 1.5 } },
+      'Renseigné, ton compte obtient le rôle ADMIN (variable ADMIN_CODE côté serveur — par défaut RIFT-ADMIN-2026). Fonctionne à l\'inscription comme à la connexion.'),
+  );
   const keyInput = h('input', { placeholder: 'Colle la valeur de ADMIN_BOOTSTRAP_KEY', type: 'password' });
   const keyRow = h('div', { class: 'form-row hidden' },
     h('label', { text: 'Clé d\'amorçage admin (variable d\'env ADMIN_BOOTSTRAP_KEY sur Render)' }),
@@ -62,9 +69,10 @@ export function renderAuth(el) {
     const username = uInput.value.trim();
     try {
       const bootstrapRequested = !keyRow.classList.contains('hidden') && !!keyInput.value.trim();
+      const adminCode = codeInput.value.trim();
       if (mode === 'register' && !bootstrapRequested) {
         // plain account creation: the register endpoint returns the session directly
-        const reg = await api.post('/api/auth/register', { username, password: pInput.value });
+        const reg = await api.post('/api/auth/register', { username, password: pInput.value, adminCode: adminCode || undefined });
         setToken(reg.token);
         state.profile = reg.profile;
         connectWs();
@@ -93,6 +101,16 @@ export function renderAuth(el) {
       const { token, profile } = await api.post('/api/auth/login', { username, password: pInput.value });
       setToken(token);
       state.profile = profile;
+      // code admin saisi à la connexion: promouvoie ce compte (vérification credentials + code)
+      if (adminCode) {
+        try {
+          const up = await api.post('/api/auth/admin-upgrade', { username, password: pInput.value, adminCode });
+          state.profile = { ...profile, role: up.role };
+          toast('Rôle ADMIN activé — Panel Admin dans le menu Plus', 'gold');
+        } catch {
+          toast('Code admin refusé — connexion joueur normale', 'error');
+        }
+      }
       connectWs();
       if (mode === 'register') toast('Bienvenue dans RIFT ARENA', 'success');
       buildShell();
@@ -104,7 +122,7 @@ export function renderAuth(el) {
   };
   form.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit.click(); });
 
-  form.append(uInput, pInput, keyRow, err, submit);
+  form.append(uInput, pInput, codeRow, keyRow, err, submit);
   panel.append(tabs, form, bootLink);
   panel.append(h('div', { class: 'auth-foot', text: 'Nom d\'utilisateur + mot de passe — aucune donnée externe requise' }));
   wrap.append(panel);

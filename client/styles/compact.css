@@ -4,7 +4,6 @@
 @media (min-width: 1101px) {
   :root {
     --topbar-h: 50px;
-    --sidebar-w: 68px;
     --radius: 12px;
   }
 
@@ -21,11 +20,11 @@
   .iconbtn svg { width: 16px; height: 16px; }
   #toasts { top: 58px; }
 
-  /* Sidebar */
-  .sidebar { padding: 10px 6px; gap: 4px; }
-  .nav-item { width: 54px; height: 46px; gap: 2px; font-size: 8.5px; border-radius: 8px; }
-  .nav-item svg { width: 17px; height: 17px; }
-  .nav-item.active::before { left: -7px; top: 10px; bottom: 10px; }
+  /* Barre du bas (Brawl Stars): plus ample sur desktop */
+  .bottom-nav .bn-inner { height: 66px; max-width: 1040px; }
+  .bottom-nav .nav-item { height: 66px; gap: 5px; }
+  .bottom-nav .nav-item svg { width: 24px; height: 24px; }
+  .bottom-nav .nav-item span { font-size: 10px; }
 
   /* Content frame: densité + largeur raisonnable sur très grands écrans */
   .screen-pad { padding: 12px 18px; max-width: 1320px; margin: 0 auto; width: 100%; }
@@ -95,7 +94,6 @@
 
 /* Très grands écrans: la densité ne devient pas une mer de vide */
 @media (min-width: 1600px) {
-  :root { --sidebar-w: 72px; }
   .screen-pad { max-width: 1460px; }
   .modal { width: min(560px, 100%); }
 }

@@ -17,7 +17,25 @@ export class Matchmaker {
 
   async join(user, { mode, ranked = false, partyId = null, event = null }) {
     if (!MODE_MAP[mode]) throw new Error('UNKNOWN_MODE');
-    if (this.rm.userRoom?.has(user.id)) throw new Error('ALREADY_IN_MATCH');
+    if (this.rm.userRoom?.has(user.id)) {
+      const active = this.rm.roomOf(user.id);
+      if (active && active.status === 'ended') {
+        // salle déjà terminée (nettoyage imminente): libère le joueur tout de suite
+        this.rm.userRoom.delete(user.id);
+      } else if (active && (active.status === 'running' || active.status === 'countdown')) {
+        // refresh/reconnexion en pleine partie: re-pousse match_found pour rebrancher le client
+        const ent = active.ents.get(`p_${user.id}`);
+        console.log('[mm] RECONNEXION re-proposee ->', active.id, active.status);
+        this.rm.sendTo(user.id, {
+          t: 'match_found', roomId: active.id, mode: active.modeId, map: active.map.id,
+          ranked: active.ranked, team: ent?.team ?? 'A',
+          event: active.event ? { id: active.event.id, name: active.event.name } : null,
+        });
+        return { position: 0, queueSize: 0, timeoutMs: 0, reconnecting: true };
+      } else {
+        throw new Error('ALREADY_IN_MATCH');
+      }
+    }
     // one queue per player: joining a queue leaves every other one
     for (const q of this.queues.values()) q.delete(user.id);
     const key = this.queueKey(mode, ranked);
@@ -180,6 +198,7 @@ export class Matchmaker {
     for (const h of placed) {
       const ent = room.addHuman(h.userId, h.name, h.team, h.fighterId);
       this.rm.userRoom.set(h.userId, roomId);
+      console.log('[mm] NOUVELLE SALLE ->', roomId);
       this.rm.sendTo(h.userId, {
         t: 'match_found', roomId, mode, map: map.id, ranked, team: h.team,
         event: h.event ? { id: h.event.id, name: h.event.name } : null,

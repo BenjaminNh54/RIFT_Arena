@@ -48,6 +48,14 @@ export async function launchMatchClient(match) {
       return;
     }
   }
+  // une map sans dimensions valides donnait un tileCache 0px → DOMException drawImage à chaque frame
+  const mapOk = map && Number.isFinite(map.width) && Number.isFinite(map.height) &&
+    map.width >= 1 && map.height >= 1 && Array.isArray(map.grid) && map.grid.length === map.height;
+  if (!mapOk) {
+    loading.querySelector('#ml-map').textContent = 'Map invalide — retour au lobby';
+    setTimeout(() => destroy(), 1500);
+    return;
+  }
   loading.querySelector('#ml-map').textContent = map.name.toUpperCase();
 
   const canvas = h('canvas', { class: 'game-canvas' });
@@ -62,6 +70,14 @@ export async function launchMatchClient(match) {
   const client = new GameClient({ root, canvas, renderer, hud, input, controls, match, map });
   client.bindWs();
   current = client;
+  // l'écran de chargement doit disparaître dès le premier snapshot serveur:
+  // il restait sinon collé devant le match pour toute la partie
+  const offFirstSnap = onWs('snap', () => {
+    offFirstSnap?.();
+    loading.remove();
+  });
+  // filet de sécurité: même sans snapshot, ne jamais bloquer l'écran plus de 6s
+  setTimeout(() => document.querySelector('.match-loading')?.remove(), 6000);
 }
 
 function checkMobile() {
@@ -112,7 +128,7 @@ class GameClient {
     const offSnap = onWs('snap', (snap) => {
       this.snapshots.push({ at: performance.now(), snap });
       if (this.snapshots.length > 30) this.snapshots.shift();
-      this.hud.hudDebug.textContent = `snap ${snap.tick} · ping ${Math.round(performance.now() - (snap._recv ?? performance.now()))}ms`;
+      if (this.hud.hudDebug) this.hud.hudDebug.textContent = `snap ${snap.tick} · ping ${Math.round(performance.now() - (snap._recv ?? performance.now()))}ms`;
     });
     const offFx = onWs('fx', (m) => {
       for (const fx of m.list ?? []) {
@@ -426,6 +442,7 @@ function buildHud() {
   const wrap = {
     el,
     eventTag,
+    hudDebug: el.querySelector('#hud-debug'),
     update: null,
   };
   return wrap;

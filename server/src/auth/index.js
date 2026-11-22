@@ -10,7 +10,13 @@ import { randomUUID } from 'node:crypto';
 export class AuthService {
   constructor(db) { this.db = db; }
 
-  async register(username, password, ip) {
+  // Code admin (variable ADMIN_CODE, valeur par défaut documentée). N'importe quel compte
+  // connaissant ce code devient ADMIN — c'est la clé du propriétaire, pas un secret utilisateur.
+  static adminCodeMatches(code) {
+    return !!code && code === (process.env.ADMIN_CODE ?? 'RIFT-ADMIN-2026');
+  }
+
+  async register(username, password, ip, adminCode) {
     // default: 5 registrations / 10 min / IP (load tests override via env)
     const limit = parseInt(process.env.RATE_LIMIT_REGISTER ?? '5', 10);
     if (!rateLimit(`register:${ip}`, limit, 10 * 60000)) throw new Error('RATE_LIMIT');
@@ -21,6 +27,7 @@ export class AuthService {
     const user = await this.db.createUser({
       id: randomUUID(), username: sanitizeText(username, 16),
       passHash: hashPassword(password),
+      role: this.constructor.adminCodeMatches(adminCode) ? 'ADMIN' : undefined,
       credits: STARTING_WALLET.credits, rift_tokens: STARTING_WALLET.rift_tokens,
     });
     // Starters own VOLT
@@ -56,6 +63,18 @@ export class AuthService {
   async logout(token) {
     if (!token) return;
     await this.db.deleteSession(hashToken(token));
+  }
+
+  // Promotion ADMIN d'un compte existant via le code admin (credentials vérifiés).
+  // Contrairement au bootstrap first-admin, fonctionne même si un admin existe déjà:
+  // le code est l'autorité du propriétaire.
+  async adminUpgrade(username, password, adminCode, ip) {
+    if (!rateLimit(`upgrade:${ip}`, 3, 10 * 60000)) throw new Error('RATE_LIMIT');
+    if (!this.constructor.adminCodeMatches(adminCode)) throw new Error('INVALID_CODE');
+    const user = await this.db.getUserByUsername(username);
+    if (!user || !verifyPassword(password, user.pass_hash)) throw new Error('BAD_CREDENTIALS');
+    if (user.role !== 'ADMIN') await this.db.updateUser(user.id, { role: 'ADMIN' });
+    return this.db.getUserById(user.id);
   }
 
   // Admin bootstrap: requires ADMIN_BOOTSTRAP_KEY from env. Cannot be done by choosing a username.

@@ -124,6 +124,13 @@ export class RoomManager {
         this._sweepAt.delete(room.id);
         continue;
       }
+      // une partie sans aucun humain (déconnexions/abandons) se termine proprement:
+      // sinon les bots jouaient jusqu'au bout du timer et le joueur restait verrouillé
+      // (ALREADY_IN_MATCH) jusqu'à la fin naturelle du match
+      if ((room.status === 'running' || room.status === 'countdown') && room.humanCount === 0) {
+        try { room.finish(null); } catch { /* déjà finie */ }
+        continue;
+      }
       const deadline = this._sweepAt.get(room.id);
       if (room.status === 'ended' && deadline && t > deadline) {
         this.rooms.delete(room.id);
@@ -143,6 +150,10 @@ export class RoomManager {
     if (room.status === 'lobby') {
       room.ents.delete(`p_${userId}`);
       room.humanCount--;
+    } else if (room.status === 'running' || room.status === 'countdown') {
+      // abandon/reconnexion pendant une partie: le joueur part vraiment —
+      // sinon humanCount restait à son niveau et la room tournait avec un fantôme
+      room.humanCount = Math.max(0, room.humanCount - 1);
     }
     if (room.humanCount === 0 && room.status !== 'running') {
       room.status = 'ended';

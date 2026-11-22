@@ -40,7 +40,9 @@ const NAV = [
   { id: 'news', label: 'News', icon: 'news' },
   { id: 'settings', label: 'Options', icon: 'settings' },
 ];
-const MOBILE_NAV = ['lobby', 'collection', 'events', 'clan', 'friends', 'shop'];
+// barre de navigation permanente, façon Brawl Stars: 7 entrées + « Plus »
+const BOTTOM_NAV = ['lobby', 'collection', 'events', 'clan', 'friends', 'shop', 'missions'];
+const MORE_NAV = ['road', 'ranked', 'pass', 'maps', 'editor', 'news', 'settings'];
 
 let shell = null;
 
@@ -97,9 +99,9 @@ export function buildShell() {
   shell = h('div', { class: 'app-shell' });
   shell.append(buildTopbar());
   const body = h('div', { class: 'app-body' });
-  const sidebar = h('nav', { class: 'sidebar', id: 'sidebar' });
+  // plus de sidebar: la navigation vit dans la barre du bas (style Brawl Stars), tous écrans
   const content = h('div', { class: 'content', id: 'screen-root' });
-  body.append(sidebar, content);
+  body.append(content);
   shell.append(body);
   shell.append(buildBottomNav());
   app.append(shell, h('div', { class: 'rift-bg', style: { position: 'absolute', zIndex: -1 } }));
@@ -110,9 +112,6 @@ export function buildShell() {
 
   refreshNav();
   navigate('lobby');
-  if (isStaff()) {
-    // staff shortcut entry exists in settings; nothing forced here
-  }
 }
 
 function navEl(item, mobile = false) {
@@ -150,6 +149,12 @@ function buildTopbar() {
   notifBtn.append(h('span', { class: 'dot hidden', id: 'notif-dot' }));
   bar.append(notifBtn);
 
+  if (isStaff()) {
+    bar.append(h('button', {
+      class: 'iconbtn', html: svgStr('shield'), title: 'Panel Admin',
+      style: { color: 'var(--gold)' }, onClick: () => navigate('admin'),
+    }));
+  }
   bar.append(h('button', { class: 'iconbtn', html: svgStr('settings'), onClick: () => navigate('settings') }));
   bar.append(h('button', {
     class: 'iconbtn', html: svgStr('logout'),
@@ -169,14 +174,43 @@ function buildTopbar() {
 function buildBottomNav() {
   const nav = h('nav', { class: 'bottom-nav' });
   const inner = h('div', { class: 'bn-inner' });
-  for (const id of MOBILE_NAV) {
+  for (const id of BOTTOM_NAV) {
     const item = NAV.find(n => n.id === id);
     if (item) inner.append(navEl(item, true));
   }
-  const item = NAV.find(n => n.id === 'missions');
-  inner.append(navEl(item, true));
+  inner.append(h('button', {
+    class: 'nav-item m-nav', html: `${svgStr('dots')}<span>Plus</span>`,
+    onClick: openMoreMenu,
+  }));
   nav.append(inner);
   return nav;
+}
+
+// menu « Plus »: écrans secondaires (route TR, classé, pass, maps, éditeur, news, options)
+// + entrée Panel Admin pour le staff — n'importe quelle taille d'écran
+function openMoreMenu() {
+  if (document.getElementById('more-backdrop')) return;
+  const grid = h('div', { class: 'more-grid' });
+  for (const id of MORE_NAV) {
+    const item = NAV.find(n => n.id === id);
+    if (item) grid.append(h('button', {
+      class: 'more-item', html: `${svgStr(item.icon)}<span>${item.label}</span>`,
+      onClick: () => { bd.remove(); navigate(item.id); },
+    }));
+  }
+  if (isStaff()) {
+    grid.append(h('button', {
+      class: 'more-item admin', html: `${svgStr('shield')}<span>Admin</span>`,
+      onClick: () => { bd.remove(); navigate('admin'); },
+    }));
+  }
+  const bd = h('div', { class: 'modal-backdrop', id: 'more-backdrop',
+    onClick: (e) => { if (e.target === bd) bd.remove(); } });
+  bd.append(h('div', { class: 'modal', style: { width: 'min(440px, 100%)' } },
+    h('div', { class: 'modal-head' }, 'Menu', h('span', { class: 'spacer' }),
+      h('button', { class: 'iconbtn', html: svgStr('close'), onClick: () => bd.remove() })),
+    h('div', { class: 'modal-body' }, grid)));
+  document.getElementById('overlays').append(bd);
 }
 
 export function refreshNav() {

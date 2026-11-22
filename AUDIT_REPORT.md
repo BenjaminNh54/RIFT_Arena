@@ -134,6 +134,62 @@ simple fermeture/réouverture de l'onglet suffit.
 
 ---
 
+## 18. RONDE 5 — Menus façon Brawl Stars, accès admin, partie jouable de bout en bout
+
+Constats de la ronde (captures + console en production) : la barre latérale desktop était **vide**
+(aucun item n'était jamais ajouté par le shell — navigation PC morte depuis la ronde 3), aucun
+moyen visible d'accéder au panel admin, et une vraie partie révélait quatre bugs bloquants jamais
+testés de bout en bout.
+
+### Navigation « Brawl Stars » (tous les écrans)
+
+- `buildShell` ne remplissait **jamais** la sidebar : bande sombre vide sur PC, aucune navigation.
+- Refonte : **barre du bas permanente** sur tous les écrans (7 entrées + « Plus » : Route TR, Classé,
+  Pass, Maps, Créer, News, Options + entrée **Admin** pour le staff). Sidebar supprimée (HTML, CSS,
+  variables), contenu pleine largeur, menu « Plus » en grille de tuiles.
+- Vérifié navigateur : 8 items en bas, écrans principaux (Lobby→Missions) + tous les écrans du
+  menu Plus rendent, zéro erreur.
+
+### Accès admin
+
+- Le serveur n'acceptait **aucun code admin** : seulement un bootstrap par clé env
+  `ADMIN_BOOTSTRAP_KEY`, premier admin uniquement — le compte « Admin » était resté `player`.
+- Nouveau **code admin** (`ADMIN_CODE`, défaut documenté `RIFT-ADMIN-2026`) accepté :
+  - à **l'inscription** (`/api/auth/register` + champ `adminCode`) → rôle ADMIN direct ;
+  - à la **connexion** via `/api/auth/admin-upgrade` (credentials + code vérifiés, promotion même
+    si un admin existe déjà) ;
+  - champ visible sur l'écran d'authentification, les deux modes.
+- **Entrée admin désormais visible** : bouclier doré dans la barre du haut (staff uniquement) +
+  tuile « Admin » dans le menu Plus + bouton dans les Options. Panel admin testé connecté.
+
+### Partie jouable (4 bugs corrigés, testés en match réel contre bots)
+
+| # | Gravité | Bug | Correctif |
+|---|---------|-----|-----------|
+| 31 | **Bloquant visuel** | Le sol de l'arène était **noir** : `renderer.js` multipliait par `TILE` l'**objet** des types de tuiles (`{WALL:1,...}`) au lieu de la taille 64px (`GAME.TILE`) → canvas texture NaN/0px. | Import `GAME` + 60 usages corrigés. |
+| 32 | **Bloquant** | `buildHud()` exposait un objet sans la propriété `hudDebug` (l'élément `#hud-debug` existe dans le DOM) → TypeError à chaque snapshot (~10/s, spam console). | Propriété exposée + garde défensive. |
+| 33 | **Bloquant** | L'écran de **chargement restait collé devant le match pour toujours** (`loading` jamais retiré) — le jeu tournait masqué. | Retiré au premier snapshot serveur + filet 6 s. |
+| 34 | **Bloquant rétention** | Quitter/fermer en pleine partie laissait la room tourner pour des bots jusqu'au bout du timer, joueur verrouillé (`ALREADY_IN_MATCH`) ; `leaveRoom` ne décrémentait pas `humanCount` en partie. | `leaveRoom` décrémente ; le sweep **termine proprement** toute partie sans humain ; re-queue = match neuf (vérifié : 2 salles distinctes, timer frais 2:29). |
+
+### Reconnexion après refresh (bonus)
+
+Un refresh/reconnexion en pleine partie re-proposait la file au lieu de rebrancher : `join()`
+détecte désormais la salle active (`running`/`countdown`) et **re-émet `match_found`** → le client
+se reconnecte à sa partie en un clic JOUER. Testé : reload en pleine partie → rebranché sur le
+même match (timer continu).
+
+### Vérifications
+
+- Cycle complet en Chrome headless : file → bot fill (8 s) → countdown → jeu (sol, entités,
+  HUD, minimap) → fin → écran résultats (VICTOIRE/ÉGALITÉ + récompenses) → REJOUER/Retour lobby.
+- Pause (Échap) → Abandonner → retour lobby → re-queue OK. Zéro erreur console pendant tout le cycle.
+- Régression : **50/50 tests serveur** ; `node --check` sur tous les fichiers touchés.
+
+**Note déploiement** : `ADMIN_CODE` peut être redéfini dans les variables d'environnement Render
+(valeur par défaut `RIFT-ADMIN-2026` sinon). L'ancien flux clé `ADMIN_BOOTSTRAP_KEY` reste disponible.
+
+---
+
 ## 1. Bugs trouvés
 
 | # | Gravité | Bug |

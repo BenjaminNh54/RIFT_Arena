@@ -44,6 +44,7 @@ const P = {
   skull: '<path d="M12 2a8 8 0 0 0-8 8c0 3 1.6 5 3.5 6.3V20a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-3.7C18.4 15 20 13 20 10a8 8 0 0 0-8-8zM9 10.5A1.75 1.75 0 1 1 9 7a1.75 1.75 0 0 1 0 3.5zm6 0A1.75 1.75 0 1 1 15 7a1.75 1.75 0 0 1 0 3.5zM11 14h2l-1 3-1-3z"/>',
   heart: '<path d="M12 21S3 14.4 3 8.6C3 5.5 5.4 3 8.4 3c1.5 0 2.8.7 3.6 1.8C12.8 3.7 14.1 3 15.6 3 18.6 3 21 5.5 21 8.6 21 14.4 12 21 12 21z"/>',
   shield: '<path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z"/>',
+  dots: '<circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/>',
   bolt: '<path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/>',
   drone: '<circle cx="6" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="currentColor"/>',
   turret: '<path d="M5 20h14v2H5v-2zm2-3h10v2H7v-2zm1-2v-4h8v4H8zm2-6V5h4v4h-4zm6.5-1a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>',

@@ -1,6 +1,6 @@
 // RIFT ARENA — game renderer: procedural tile textures, vector entities, camera, effects
 import { FIGHTER_MAP } from '/shared/definitions/fighters.js';
-import { TILE } from '/shared/constants.js';
+import { GAME, TILE } from '/shared/constants.js';
 import { drawFighter } from '../components/ui.js';
 
 const THEME = {
@@ -30,47 +30,48 @@ export class Renderer {
     // bake the whole static map into an offscreen canvas (tiles don't change except crates)
     const m = this.map;
     const off = document.createElement('canvas');
-    off.width = m.width * TILE; off.height = m.height * TILE;
+    off.width = Math.max(1, Math.round((m.width ?? 0) * GAME.TILE));
+    off.height = Math.max(1, Math.round((m.height ?? 0) * GAME.TILE));
     const c = off.getContext('2d');
     const t = this.theme;
     // floor base with subtle checker + grid
     for (let y = 0; y < m.height; y++) {
       for (let x = 0; x < m.width; x++) {
         c.fillStyle = t.floor[(x + y) % 2];
-        c.fillRect(x * TILE, y * TILE, TILE, TILE);
+        c.fillRect(x * GAME.TILE, y * GAME.TILE, GAME.TILE, GAME.TILE);
         c.strokeStyle = t.grid;
-        c.strokeRect(x * TILE + 0.5, y * TILE + 0.5, TILE - 1, TILE - 1);
+        c.strokeRect(x * GAME.TILE + 0.5, y * GAME.TILE + 0.5, GAME.TILE - 1, GAME.TILE - 1);
         // floor rivets / decor dots
         if (this.quality !== 'low' && (x * 7 + y * 13) % 11 === 0) {
           c.fillStyle = 'rgba(255,255,255,0.045)';
-          c.beginPath(); c.arc(x * TILE + TILE * 0.7, y * TILE + TILE * 0.3, 3, 0, 7); c.fill();
+          c.beginPath(); c.arc(x * GAME.TILE + GAME.TILE * 0.7, y * GAME.TILE + GAME.TILE * 0.3, 3, 0, 7); c.fill();
         }
       }
     }
     for (let y = 0; y < m.height; y++) {
       for (let x = 0; x < m.width; x++) {
-        const tile = m.grid[y][x];
-        const px = x * TILE, py = y * TILE;
+        const tile = m.grid[y]?.[x];
+        const px = x * GAME.TILE, py = y * GAME.TILE;
         if (tile === TILE.WALL) {
-          c.fillStyle = t.wall; c.fillRect(px, py, TILE, TILE);
-          c.fillStyle = t.wallTop; c.fillRect(px, py, TILE, 10);
-          c.strokeStyle = 'rgba(0,0,0,0.4)'; c.strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+          c.fillStyle = t.wall; c.fillRect(px, py, GAME.TILE, GAME.TILE);
+          c.fillStyle = t.wallTop; c.fillRect(px, py, GAME.TILE, 10);
+          c.strokeStyle = 'rgba(0,0,0,0.4)'; c.strokeRect(px + 1, py + 1, GAME.TILE - 2, GAME.TILE - 2);
           // panel lines
           c.fillStyle = 'rgba(0,0,0,0.25)';
-          c.fillRect(px + TILE / 2 - 1, py + 10, 2, TILE - 10);
+          c.fillRect(px + GAME.TILE / 2 - 1, py + 10, 2, GAME.TILE - 10);
         } else if (tile === TILE.WATER) {
-          c.fillStyle = t.water; c.fillRect(px, py, TILE, TILE);
+          c.fillStyle = t.water; c.fillRect(px, py, GAME.TILE, GAME.TILE);
           c.fillStyle = 'rgba(255,255,255,0.1)';
           for (let i = 0; i < 3; i++) c.fillRect(px + 6 + i * 20, py + 12 + ((x + y + i) % 3) * 14, 12, 3);
         } else if (tile === TILE.HAZARD) {
-          const g = c.createRadialGradient(px + TILE / 2, py + TILE / 2, 4, px + TILE / 2, py + TILE / 2, TILE * 0.7);
+          const g = c.createRadialGradient(px + GAME.TILE / 2, py + GAME.TILE / 2, 4, px + GAME.TILE / 2, py + GAME.TILE / 2, GAME.TILE * 0.7);
           g.addColorStop(0, t.hazard); g.addColorStop(1, 'rgba(0,0,0,0)');
-          c.fillStyle = g; c.fillRect(px, py, TILE, TILE);
+          c.fillStyle = g; c.fillRect(px, py, GAME.TILE, GAME.TILE);
         } else if (tile === TILE.PORTAL) {
           c.fillStyle = t.portal;
-          c.beginPath(); c.ellipse(px + TILE / 2, py + TILE / 2, TILE * 0.3, TILE * 0.42, 0, 0, 7); c.fill();
+          c.beginPath(); c.ellipse(px + GAME.TILE / 2, py + GAME.TILE / 2, GAME.TILE * 0.3, GAME.TILE * 0.42, 0, 0, 7); c.fill();
           c.fillStyle = 'rgba(255,255,255,0.5)';
-          c.beginPath(); c.ellipse(px + TILE / 2, py + TILE / 2, TILE * 0.12, TILE * 0.24, 0, 0, 7); c.fill();
+          c.beginPath(); c.ellipse(px + GAME.TILE / 2, py + GAME.TILE / 2, GAME.TILE * 0.12, GAME.TILE * 0.24, 0, 0, 7); c.fill();
         }
       }
     }
@@ -95,21 +96,23 @@ export class Renderer {
     const m = this.map;
     ctx.imageSmoothingEnabled = false;
 
-    // static tiles
-    ctx.drawImage(this.tileCache, 0, 0);
+    // static tiles (jamais dessiné si le cache est vide — évite DOMException canvas 0px)
+    if (this.tileCache && this.tileCache.width > 0 && this.tileCache.height > 0) {
+      ctx.drawImage(this.tileCache, 0, 0);
+    }
 
     // crates (dynamic — destroyed at runtime) & bushes
     for (let y = 0; y < m.height; y++) {
       for (let x = 0; x < m.width; x++) {
         const tile = m.grid[y][x];
-        const px = x * TILE, py = y * TILE;
+        const px = x * GAME.TILE, py = y * GAME.TILE;
         if (tile === TILE.CRATE) {
           const t = this.theme;
-          ctx.fillStyle = t.crate; ctx.fillRect(px + 3, py + 3, TILE - 6, TILE - 6);
+          ctx.fillStyle = t.crate; ctx.fillRect(px + 3, py + 3, GAME.TILE - 6, GAME.TILE - 6);
           ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2;
-          ctx.strokeRect(px + 3, py + 3, TILE - 6, TILE - 6);
-          ctx.beginPath(); ctx.moveTo(px + 3, py + 3); ctx.lineTo(px + TILE - 3, py + TILE - 3);
-          ctx.moveTo(px + TILE - 3, py + 3); ctx.lineTo(px + 3, py + TILE - 3); ctx.stroke();
+          ctx.strokeRect(px + 3, py + 3, GAME.TILE - 6, GAME.TILE - 6);
+          ctx.beginPath(); ctx.moveTo(px + 3, py + 3); ctx.lineTo(px + GAME.TILE - 3, py + GAME.TILE - 3);
+          ctx.moveTo(px + GAME.TILE - 3, py + 3); ctx.lineTo(px + 3, py + GAME.TILE - 3); ctx.stroke();
         } else if (tile === TILE.BUSH) {
           const t = this.theme;
           ctx.fillStyle = t.bush;
@@ -134,7 +137,7 @@ export class Renderer {
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(255,60,60,0.07)';
-      ctx.fillRect(0, 0, m.width * TILE, m.height * TILE);
+      ctx.fillRect(0, 0, m.width * GAME.TILE, m.height * GAME.TILE);
       ctx.save();
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath(); ctx.arc(state.safe.x, state.safe.y, state.safe.r, 0, 7); ctx.fill();
@@ -158,10 +161,10 @@ export class Renderer {
     const goals = m.objectives?.goalA ? [[m.objectives.goalA, 'A'], [m.objectives.goalB, 'B']] : [];
     for (const [[gx, gy], team] of goals) {
       ctx.fillStyle = team === 'A' ? 'rgba(63,169,255,0.3)' : 'rgba(255,77,109,0.3)';
-      ctx.fillRect(gx * TILE, gy * TILE - 40, TILE, TILE + 80);
+      ctx.fillRect(gx * GAME.TILE, gy * GAME.TILE - 40, GAME.TILE, GAME.TILE + 80);
       ctx.strokeStyle = team === 'A' ? '#3fa9ff' : '#ff4d6d';
       ctx.lineWidth = 3;
-      ctx.strokeRect(gx * TILE, gy * TILE - 40, TILE, TILE + 80);
+      ctx.strokeRect(gx * GAME.TILE, gy * GAME.TILE - 40, GAME.TILE, GAME.TILE + 80);
     }
 
     // crystal pickups

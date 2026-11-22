@@ -93,7 +93,7 @@ export function createApi(ctx) {
       if (!rateLimit(`reg:${ip}`, parseInt(process.env.RATE_LIMIT_REGISTER ?? '8', 10), 600000)) return json(res, 429, { error: 'RATE_LIMIT' });
       if (!csrfOk(req)) return json(res, 403, { error: 'CSRF' });
       try {
-        const user = await auth.register(body.username, body.password, ip);
+        const user = await auth.register(body.username, body.password, ip, body.adminCode);
         const { token, expiresAt } = await issueSession(auth, user, db);
         setSessionCookie(res, token, expiresAt);
         return json(res, 200, { ok: true, token, profile: await auth.profile(user) });
@@ -117,6 +117,15 @@ export function createApi(ctx) {
       await auth.logout(tokenFrom(req));
       clearSessionCookie(res);
       return json(res, 200, { ok: true });
+    }
+    if (pathname === '/api/auth/admin-upgrade' && method === 'POST') {
+      if (!csrfOk(req)) return json(res, 403, { error: 'CSRF' });
+      try {
+        const user = await auth.adminUpgrade(body.username, body.password, body.adminCode, ip);
+        return json(res, 200, { ok: true, role: user.role });
+      } catch (e) {
+        return json(res, 400, { error: e.message });
+      }
     }
     if (pathname === '/api/auth/bootstrap-admin' && method === 'POST') {
       if (!csrfOk(req)) return json(res, 403, { error: 'CSRF' });
