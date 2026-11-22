@@ -1,4 +1,8 @@
+SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- RIFT ARENA — MySQL schema (Alwaysdata / any MySQL 5.7+ / MariaDB 10.3+)
+-- Every table carries an explicit COLLATE: string FK columns (CHAR(36)) must share the
+-- exact same collation as their referenced column, otherwise errno 150 at creation.
 -- Conventions: utf8mb4, InnoDB, ids as CHAR(36) UUIDs, created_at/updated_at everywhere.
 -- Note: auth+profile+wallet+stats are merged in `users` (single-row hot path);
 --       document-like content (events, news, shop, maps, passes) uses JSON columns.
@@ -40,7 +44,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id    CHAR(36)  NOT NULL,
   expires_at DATETIME  NOT NULL,
   CONSTRAINT fk_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS trophies_log (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -50,7 +54,7 @@ CREATE TABLE IF NOT EXISTS trophies_log (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_tlog_user (user_id, created_at),
   CONSTRAINT fk_tlog_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS user_brawlers (
   user_id    CHAR(36) NOT NULL,
@@ -61,7 +65,7 @@ CREATE TABLE IF NOT EXISTS user_brawlers (
   level      INT NOT NULL DEFAULT 1,
   PRIMARY KEY (user_id, fighter_id),
   CONSTRAINT fk_brawlers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS user_inventory (
   id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -72,7 +76,7 @@ CREATE TABLE IF NOT EXISTS user_inventory (
   acquired_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_inv (user_id, kind, ref_id),
   CONSTRAINT fk_inv_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS user_missions (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -84,7 +88,7 @@ CREATE TABLE IF NOT EXISTS user_missions (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_mission (user_id, period_key, tpl_id),
   CONSTRAINT fk_missions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS friends (
   user_a     CHAR(36) NOT NULL,                     -- always user_a < user_b
@@ -93,7 +97,7 @@ CREATE TABLE IF NOT EXISTS friends (
   since      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_a, user_b),
   INDEX idx_friends_a (user_a), INDEX idx_friends_b (user_b)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS friend_requests (
   id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -102,7 +106,7 @@ CREATE TABLE IF NOT EXISTS friend_requests (
   at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_freq (from_user, to_user),
   INDEX idx_freq_to (to_user)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS clans (
   id         CHAR(36)     NOT NULL PRIMARY KEY,
@@ -118,7 +122,7 @@ CREATE TABLE IF NOT EXISTS clans (
   leader_id  CHAR(36)     NULL,
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_clans_trophies (trophies DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS clan_members (
   user_id   CHAR(36) NOT NULL PRIMARY KEY,
@@ -128,7 +132,7 @@ CREATE TABLE IF NOT EXISTS clan_members (
   INDEX idx_clanm_clan (clan_id),
   CONSTRAINT fk_clanm_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_clanm_clan FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS clan_requests (
   id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -136,7 +140,7 @@ CREATE TABLE IF NOT EXISTS clan_requests (
   user_id CHAR(36) NOT NULL,
   at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_creq (clan_id, user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- weekly clan war aggregate (one row per clan per week)
 CREATE TABLE IF NOT EXISTS clan_wars (
@@ -146,7 +150,7 @@ CREATE TABLE IF NOT EXISTS clan_wars (
   wins    INT NOT NULL DEFAULT 0,
   points  INT NOT NULL DEFAULT 0,
   PRIMARY KEY (week, clan_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS messages (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -157,7 +161,7 @@ CREATE TABLE IF NOT EXISTS messages (
   text       VARCHAR(240) NOT NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   INDEX idx_msg_chan (channel, channel_id, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS game_matches (
   id          VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -168,7 +172,7 @@ CREATE TABLE IF NOT EXISTS game_matches (
   duration_ms INT NOT NULL DEFAULT 0,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_matches_mode (mode, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS match_players (
   id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -190,7 +194,7 @@ CREATE TABLE IF NOT EXISTS match_players (
   INDEX idx_mp_match (match_id),
   CONSTRAINT fk_mp_match FOREIGN KEY (match_id) REFERENCES game_matches(id) ON DELETE CASCADE,
   CONSTRAINT fk_mp_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ranked_seasons (
   id         CHAR(36) NOT NULL PRIMARY KEY,
@@ -199,7 +203,7 @@ CREATE TABLE IF NOT EXISTS ranked_seasons (
   ends_at    DATETIME NULL,
   ended_at   DATETIME NULL,
   reset_to   VARCHAR(12) NOT NULL DEFAULT 'gold'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ranked_players (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -213,7 +217,7 @@ CREATE TABLE IF NOT EXISTS ranked_players (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_ranked (season_id, user_id),
   INDEX idx_ranked_rp (season_id, rp DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS events (
   id       CHAR(36)    NOT NULL PRIMARY KEY,
@@ -221,7 +225,7 @@ CREATE TABLE IF NOT EXISTS events (
   priority INT         NOT NULL DEFAULT 0,
   status   VARCHAR(12) NOT NULL DEFAULT 'draft',
   INDEX idx_events_status (status, priority DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS event_progress (
   id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -231,12 +235,12 @@ CREATE TABLE IF NOT EXISTS event_progress (
   claimed    TINYINT(1) NOT NULL DEFAULT 0,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_eprog (event_id, user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS battle_passes (
   id   CHAR(36) NOT NULL PRIMARY KEY,
   data JSON     NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS battle_pass_progress (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -249,7 +253,7 @@ CREATE TABLE IF NOT EXISTS battle_pass_progress (
   claimed_premium JSON NOT NULL,
   updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_bpp (pass_id, user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS news (
   id        CHAR(36)    NOT NULL PRIMARY KEY,
@@ -258,17 +262,17 @@ CREATE TABLE IF NOT EXISTS news (
   priority  INT         NOT NULL DEFAULT 0,
   date      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_news_pub (published, priority DESC, date DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS shop_items (
   id   CHAR(36) NOT NULL PRIMARY KEY,
   data JSON     NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS shop_rotations (
   day_key  DATE NOT NULL PRIMARY KEY,
   item_ids JSON NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS reports (
   id         CHAR(36)    NOT NULL PRIMARY KEY,
@@ -276,7 +280,7 @@ CREATE TABLE IF NOT EXISTS reports (
   status     VARCHAR(10) NOT NULL DEFAULT 'open',
   created_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_reports_status (status, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS sanctions (
   id         CHAR(36)     NOT NULL PRIMARY KEY,
@@ -289,7 +293,7 @@ CREATE TABLE IF NOT EXISTS sanctions (
   created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_sanctions_user (user_id, status),
   CONSTRAINT fk_sanctions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS admin_logs (
   id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -301,12 +305,12 @@ CREATE TABLE IF NOT EXISTS admin_logs (
   result  VARCHAR(20)  NOT NULL DEFAULT 'ok',
   at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX idx_alogs_at (at DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS game_config (
   k VARCHAR(40) NOT NULL PRIMARY KEY,
   v JSON NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS maps (
   id         CHAR(36)     NOT NULL PRIMARY KEY,
@@ -321,14 +325,14 @@ CREATE TABLE IF NOT EXISTS maps (
   data       JSON NOT NULL,                          -- full map document (grid, spawns, modes...)
   INDEX idx_maps_status (status, created_at),
   INDEX idx_maps_author (author_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS parties (
   id         CHAR(36) NOT NULL PRIMARY KEY,
   leader_id  CHAR(36) NULL,
   mode       VARCHAR(24) NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS party_members (
   id        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -336,4 +340,4 @@ CREATE TABLE IF NOT EXISTS party_members (
   user_id   CHAR(36) NOT NULL,
   joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_pm (party_id, user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

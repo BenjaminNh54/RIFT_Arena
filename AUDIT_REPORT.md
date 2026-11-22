@@ -2,7 +2,47 @@
 
 Date : 2026-11-22 — Audit réalisé sur le ZIP fourni (`Rift-Arena(1).zip`, 100 fichiers, 72 fichiers JS).
 Méthode : lecture du code, `node --check` sur tous les JS, exécution réelle de la suite de tests,
-démarrages réels du serveur (mode dev JSON + mode strict MySQL), grep systématiques de sécurité.
+démarrages réels du serveur (mode dev JSON + mode strict MySQL), grep systématiques de sécurité,
+puis **vérification sur un vrai serveur MySQL 9.7.4** (voir §15 — ronde 2 après déploiement Render).
+
+---
+
+## 15. RONDE 2 — Bugs révélés par le premier déploiement Render (corrigés et vérifiés sur MySQL réel)
+
+Le premier déploiement sur Render + Alwaysdata a révélé des bugs invisibles en local (le store
+JSON masque tout le SQL). Diagnostic depuis les logs de production, corrections vérifiées en
+rejouant le schéma sur un **MySQL 9.7.4 réel** avec les conditions Alwaysdata reproduites.
+
+| # | Gravité | Bug | Correctif |
+|---|---------|-----|-----------|
+| 12 | **Bloquant (production)** | `errno: 150 "Foreign key constraint is incorrectly formed"` : `users` était créé avec `COLLATE=utf8mb4_unicode_ci` mais les **30 autres tables** n'avaient que `CHARSET=utf8mb4` sans COLLATE → collation par défaut du serveur (`utf8mb4_0900_ai_ci`) ≠ collation de `users` sur les FK CHAR(36) → `sessions` et tout le schéma après elle ne se créaient jamais. | `COLLATE=utf8mb4_unicode_ci` explicite sur les **31 tables** + `SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci` en tête de schéma. Vérifié : 32 tables créées, 10 FK valides, collations toutes cohérentes (information_schema). |
+| 13 | **Bloquant (production)** | `auto-migrate` en échec ne stoppait pas le boot (le serveur crashait ensuite sur les tables manquantes, cf. log Render `Table 'events' doesn't exist`). | Échec de replay du schéma MySQL = **arrêt immédiat** (`exit(1)`) avec le statement fautif nommé. `seedContent` rendu résilient par bloc (`safe()`). |
+| 14 | **Bloquant (production)** | `INSERT INTO users` : **11 colonnes mais 10 placeholders** → `Column count doesn't match value count` à l'inscription. | Corrigé (11 `?`). Audit automatisé de tous les INSERT du store (26 statements, comptage parenthèses à profondeur) : tous cohérents. |
+| 15 | **Bloquant (production)** | Dates ISO-8601 (`2026-…T…Z`) envoyées dans des colonnes `DATETIME` → rejetées par MySQL strict (`Incorrect datetime value`) à l'inscription, sessions, sanctions, matchs… | `now()` produit le format MySQL UTC + normaliseur global `sqlParam` sur les 108 points d'exécution SQL (`_execute`/`_query`) : ISO/Date → `YYYY-MM-DD HH:MM:SS`, `undefined` → `NULL`, objets/tableaux → JSON. Pool en `timezone: 'Z'` + `time_zone='+00:00'` (comparaisons `NOW()` cohérentes UTC). |
+| 16 | **Majeur (production)** | Objets JS passés bruts dans les colonnes JSON → valeurs `'[object Object]'`. | Couvert par `sqlParam` (sérialisation automatique). |
+| 17 | **Majeur (production)** | Lectures JSON : mysql2 **parse déjà** les colonnes JSON en objets → `JSON.parse(objet)` plantait (`[object Object] is not valid JSON`, `Unexpected end of JSON input`). | Lecteur tolérant `jparse()` sur les 12 points de lecture (objet OU chaîne, NULL → fallback). |
+| 18 | **Majeur (production)** | Alias SQL `by_id AS by` — `BY` est un mot réservé MySQL 8 → erreur de syntaxe dans `activeSanctions`. | Alias backtické `` `by` `` (les consommateurs JS lisent `s.by`). |
+| 19 | Mineur (production) | Commentaires SQL inline contenant `;` (ex. `-- sha256 of token; raw token never stored`) coupaient les statements du replay. | Scanner à états dans `auto-migrate` (respect des chaînes quotées et des commentaires). |
+
+**Vérification réelle (MySQL 9.7.4, conditions Alwaysdata reproduites)** :
+- `autoMigrate` : schéma complet + migration 001 ; re-jouage idempotent (2ᵉ passage : 0 migration).
+- 32 tables / 10 FK / collations cohérentes (`information_schema`).
+- **76 opérations du store exercées avec succès** (users, sessions, inventaire, trophées, clans+guerre,
+  amis+blocage, sanctions, missions, events+progression, pass, ranked+saison, boutique+rotation,
+  config, maps (save/get/list/like/update), matchs+joueurs, messages, parties, reports, logs admin, news).
+- **Serveur réel booté sur MySQL** : `/healthz` → `MYSQL CONNECTÉ` ; inscription HTTP 200 ; ligne
+  utilisateur vérifiée dans MySQL ; **redémarrage du serveur → login 200 (persistance réelle prouvée)**.
+- Régression JSON : 50/50 tests toujours verts.
+
+Reste non vérifiable dans la sandbox : Alwaysdata lui-même (hôte distant) — mais le schéma est
+maintenant validé sur un MySQL 9.7.4 réel avec ses conditions exactes (collation serveur
+`utf8mb4_0900_ai_ci`, mode strict). Au redéploiement, les logs doivent montrer
+`[auto-migrate] schema.sql appliqué (toutes les tables)` puis `[db] MYSQL CONNECTÉ`.
+
+**État de la base Alwaysdata existante** : le déploiement raté a créé `users` (avec la bonne
+collation) et `_migrations`, rien d'autre. Le schéma corrigé est idempotent : le redéploiement
+crée les ~30 tables manquantes sans toucher à `users`. Aucune action manuelle requise ; en cas
+de doute, vider les tables dans phpMyAdmin Alwaysdata suffit (aucune donnée de jeu réelle n'existe encore).
 
 ---
 
@@ -92,7 +132,7 @@ Tout ce qui précède a été **exécuté** (tests automatisés + démarrages r�
 
 ## 9. Fonctionnalités non testées
 
-- **MySQL Alwaysdata réel** : aucune instance disponible dans la sandbox de travail. La connexion a été testée en échec contrôlé (ECONNREFUSED → comportement strict vérifié) et le code SQL est couvert indirectement par le store JSON miroir. À valider au premier déploiement Render (les logs `[db] MYSQL CONNECTÉ` et `/healthz` `state:"connected"` le confirmeront).
+- **MySQL Alwaysdata réel** : reproduit et validé sur un **MySQL 9.7.4 local réel** (schéma, FK, collations, 76 opérations du store, boot serveur, persistance après redémarrage) — la connexion à l'hôte Alwaysdata distant reste à confirmer au redéploiement (logs `[db] MYSQL CONNECTÉ`, `/healthz` → `state:"connected"`).
 - **Rendu visuel multi-appareils réel** (1920/1366/1024/768/430/390/360 px) : structure vérifiée par code (meta viewport, media queries, HUD/overlays en CSS flexible, joystick tactile), mais pas de test navigateur automatisé — à confirmer visuellement.
 - **Installation PWA sur iOS Safari** : manifest + SW vérifiés par code (cache shell versionné, `/api/` et `/ws` jamais cachés), installation réelle non testée.
 - **Charge multi-joueurs réelle** (latence, concurrence SQL élevée).

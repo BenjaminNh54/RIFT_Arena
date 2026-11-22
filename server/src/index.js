@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 
 import { CONFIG, USE_MYSQL } from './config/index.js';
-import { getStore, getConfig, STRICT_DB } from './database/index.js';
+import { getStore, getConfig } from './database/index.js';
 import { AuthService } from './auth/index.js';
 import { createApi } from './api/index.js';
 import { RoomManager } from './game/rooms.js';
@@ -32,9 +32,10 @@ const MIME = {
 
 // ---------- bootstrap systems ----------
 // No-shell deployments (Render free): MySQL schema + migrations are applied at boot.
-// Strict mode (production): the server REFUSES to run without a working MySQL —
-// no silent JSON fallback that would look persisted while it is not.
-import { autoMigrate } from './database/auto-migrate.js';
+// MySQL is the active store whenever it is configured — a failed schema replay is
+// therefore ALWAYS fatal (a broken schema would crash every query), regardless of
+// DB_STRICT. JSON fallback only exists when MySQL is not configured at all.
+import { autoMigrate, mysqlConfigured } from './database/auto-migrate.js';
 let db;
 try {
   db = await getStore(); // strict gate: throws in production if MySQL is missing/unreachable
@@ -47,11 +48,9 @@ try {
   const mig = await autoMigrate(console.log);
   if (mig.ran) console.log(`[boot] MySQL prêt — schéma + ${mig.appliedMigrations} migration(s) appliquée(s)`);
 } catch (e) {
-  console.error('[boot] auto-migrate a échoué:', e.message);
-  if (STRICT_DB) {
-    console.error('[boot] MODE STRICT : arrêt — le schéma MySQL doit être appliqué avant d\'accepter des joueurs.');
-    process.exit(1);
-  }
+  console.error('[boot] AUTO-MIGRATE ÉCHOUÉ —', e.message);
+  console.error('[boot] Le schéma MySQL n\'est pas complet : arrêt (les requêtes planteraient). Corrige la base (voir AUDIT_REPORT.md §13) puis redéploie.');
+  process.exit(1);
 }
 const auth = new AuthService(db);
 const config = () => getConfig();
@@ -71,12 +70,16 @@ admin.announce = (msg) => {
 };
 
 // ---------- auto-seed default content ----------
+// Resilient: one failing seed block must not crash the boot (logged and skipped).
 await seedContent(db, config);
 
 async function seedContent(db, config) {
-  const cfg = await config;
-  // events from seeds only if events table empty
-  if ((await db.listEvents()).length === 0) {
+  const safe = async (label, fn) => {
+    try { await fn(); }
+    catch (e) { console.error(`[seed] ${label} a échoué —`, e.message); }
+  };
+  await safe('events seeded', async () => {
+    if ((await db.listEvents()).length !== 0) return;
     const { EVENT_SEEDS } = await import('../../shared/game-config/defaults.js');
     const t = Date.now();
     for (const ev of EVENT_SEEDS) {
@@ -87,18 +90,20 @@ async function seedContent(db, config) {
       });
     }
     console.log('[seed] events seeded');
-  }
-  if ((await db.listNews({ publishedOnly: false })).length === 0) {
+  });
+  await safe('news seeded', async () => {
+    if ((await db.listNews({ publishedOnly: false })).length !== 0) return;
     const { NEWS_SEEDS } = await import('../../shared/game-config/defaults.js');
     for (const n of NEWS_SEEDS) await db.upsertNews({ ...n, id: n.title.toLowerCase().replace(/\W+/g, '_').slice(0, 40), published: true, date: new Date().toISOString(), author: 'TB_games' });
     console.log('[seed] news seeded');
-  }
-  await economy.ensureCatalog();
-  await economy.ensurePass();
-  if (!await db.getSeason()) {
-    await db.ensureSeason({ name: 'Season 1 — Rift Awakening', endsAt: new Date(Date.now() + 30 * 86400e3).toISOString() });
-    console.log('[seed] ranked season 1 created');
-  }
+  });
+  await safe('shop catalog ensured', () => economy.ensureCatalog());
+  await safe('battle pass ensured', () => economy.ensurePass());
+  await safe('ranked season ensured', async () => {
+    if (!await db.getSeason()) {
+      await db.ensureSeason({ name: 'Season 1 — Rift Awakening', endsAt: new Date(Date.now() + 30 * 86400e3).toISOString() });
+    }
+  });
 }
 
 // ---------- HTTP ----------
