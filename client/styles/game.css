@@ -1,0 +1,105 @@
+/* RIFT ARENA — in-game HUD & gameplay UI */
+.game-root { position: absolute; inset: 0; background: #060a14; z-index: 50; }
+.game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* HUD top */
+.hud-top { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; z-index: 5; padding-top: 8px; }
+.hud-score {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(6, 10, 20, 0.78); border: 1px solid var(--line);
+  clip-path: var(--chamfer-sm); padding: 6px 18px;
+}
+.hud-score .hs-a { color: var(--team-a); } .hud-score .hs-b { color: var(--team-b); }
+.hud-score .hs-num { font-size: 22px; font-weight: 900; }
+.hud-timer { font-size: 15px; font-weight: 900; color: var(--text-dim); min-width: 52px; text-align: center; }
+.hud-count { position: absolute; top: 26%; left: 0; right: 0; text-align: center; font-size: 52px; font-weight: 900; color: var(--cyan); text-shadow: 0 0 24px rgba(53,224,255,0.5); pointer-events: none; z-index: 6; }
+.hud-banner { position: absolute; top: 34%; left: 0; right: 0; text-align: center; font-size: clamp(18px, 4vw, 30px); font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); text-shadow: 0 0 22px rgba(251,191,36,0.5); pointer-events: none; z-index: 6; }
+
+/* Player HUD bottom-left (health, ammo, super) */
+.hud-player { position: absolute; left: 14px; bottom: 14px; z-index: 5; display: flex; flex-direction: column; gap: 8px; width: min(300px, 44vw); pointer-events: none; }
+.hud-hp { display: flex; flex-direction: column; gap: 4px; }
+.hud-hp .hp-text { font-size: 12px; font-weight: 800; display: flex; justify-content: space-between; text-shadow: 0 1px 3px #000; }
+.hud-hp .bar { height: 12px; }
+.hud-hp .shieldbar { height: 5px; margin-top: 2px; }
+.hud-ammo { display: flex; gap: 4px; }
+.ammo-pip { flex: 1; height: 9px; clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); background: rgba(8,12,26,0.8); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.ammo-pip i { position: absolute; inset: 0; background: linear-gradient(90deg, var(--cyan), #7cc7ff); transform-origin: left; }
+.hud-super .bar { height: 10px; }
+.hud-super .bar > i { background: linear-gradient(90deg, var(--gold), var(--orange)); }
+.hud-super-ready { color: var(--gold); font-size: 11px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; animation: pulse 1.4s ease infinite; }
+
+/* Teammate bars top-left/right */
+.hud-team { position: absolute; top: 52px; z-index: 5; display: flex; flex-direction: column; gap: 6px; pointer-events: none; }
+.hud-team.left { left: 12px; } .hud-team.right { right: 12px; align-items: flex-end; }
+.tm-row { display: flex; align-items: center; gap: 7px; background: rgba(6,10,20,0.6); padding: 4px 8px; clip-path: var(--chamfer-sm); font-size: 11px; min-width: 130px; }
+.tm-row .tm-bar { width: 64px; height: 5px; }
+.tm-row.right { flex-direction: row-reverse; }
+.tm-dead { opacity: 0.45; }
+
+/* Minimap */
+.hud-minimap { position: absolute; right: 12px; bottom: 14px; z-index: 5; border: 1px solid var(--line); background: rgba(6,10,20,0.6); clip-path: var(--chamfer-sm); pointer-events: none; }
+.hud-minimap canvas { display: block; }
+
+/* Scoreboard (Tab) */
+.hud-scoreboard { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 8; background: rgba(6,10,20,0.92); border: 1px solid var(--line-strong); clip-path: var(--chamfer); padding: 16px; min-width: 340px; }
+.sb-row { display: grid; grid-template-columns: 1fr 40px 46px 56px; gap: 8px; font-size: 12.5px; padding: 5px 4px; align-items: center; }
+.sb-row.head { color: var(--text-faint); text-transform: uppercase; font-size: 9px; letter-spacing: 0.14em; }
+
+/* Pause menu */
+.pause-menu { position: absolute; inset: 0; z-index: 10; background: rgba(4,7,16,0.85); display: flex; align-items: center; justify-content: center; }
+.pause-panel { width: min(380px, 92vw); background: var(--panel-2); border: 1px solid var(--line-strong); clip-path: var(--chamfer); padding: 22px; display: flex; flex-direction: column; gap: 10px; text-align: center; }
+
+/* Mobile controls */
+.mobile-controls { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.joystick { position: absolute; left: 18px; bottom: 18px; width: 128px; height: 128px; pointer-events: auto; touch-action: none; }
+.joystick .joy-base { position: absolute; inset: 0; border-radius: 50%; background: rgba(10, 16, 32, 0.55); border: 2px solid rgba(120, 150, 255, 0.25); }
+.joystick .joy-knob { position: absolute; width: 54px; height: 54px; left: 37px; top: 37px; border-radius: 50%; background: rgba(53, 224, 255, 0.35); border: 2px solid rgba(53, 224, 255, 0.7); }
+.action-buttons { position: absolute; right: 14px; bottom: 18px; display: flex; align-items: flex-end; gap: 12px; pointer-events: auto; }
+.aim-btn {
+  width: 84px; height: 84px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(53,224,255,0.5), rgba(14,116,144,0.7));
+  border: 2px solid rgba(53,224,255,0.8);
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none;
+}
+.aim-btn svg { width: 34px; height: 34px; color: #fff; }
+.aim-btn.aiming { border-color: #fff; }
+.super-btn, .ability-btn {
+  width: 58px; height: 58px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--line-strong); background: rgba(10,16,32,0.7);
+  position: relative;
+}
+.super-btn svg, .ability-btn svg { width: 24px; height: 24px; color: var(--text-dim); }
+.super-btn.ready { border-color: var(--gold); background: radial-gradient(circle at 35% 30%, rgba(251,191,36,0.45), rgba(120,53,15,0.7)); }
+.super-btn.ready svg { color: var(--gold); }
+.ability-btn .uses { position: absolute; top: -4px; right: -4px; background: var(--cyan); color: #00232b; font-size: 10px; font-weight: 900; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.abil-drag-hint { position: absolute; right: 100px; bottom: 30px; color: var(--text-dim); font-size: 11px; background: rgba(6,10,20,0.7); padding: 4px 8px; clip-path: var(--chamfer-sm); pointer-events: none; }
+
+/* Death overlay */
+.death-overlay { position: absolute; inset: 0; z-index: 9; background: rgba(60, 6, 6, 0.35); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; pointer-events: none; }
+.death-overlay .do-title { font-size: 26px; font-weight: 900; letter-spacing: 0.2em; color: var(--red); text-transform: uppercase; }
+.death-overlay .do-timer { font-size: 44px; font-weight: 900; color: #fff; }
+
+/* Spectate */
+.spectate-tag { position: absolute; top: 90px; left: 0; right: 0; text-align: center; z-index: 6; color: var(--text-dim); font-weight: 800; letter-spacing: 0.2em; font-size: 12px; text-transform: uppercase; pointer-events: none; }
+
+/* Match loading */
+.match-loading { position: absolute; inset: 0; z-index: 60; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+.match-loading .ml-map { font-size: 22px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; }
+.match-loading .ml-mode { color: var(--text-dim); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
+.match-loading .bar { width: min(300px, 60vw); }
+
+/* Emote bubble */
+.emote-bubble { position: absolute; z-index: 6; pointer-events: none; background: rgba(6,10,20,0.85); border: 1px solid var(--line-strong); clip-path: var(--chamfer-sm); padding: 6px 10px; font-size: 12px; font-weight: 800; }
+.emote-wheel { position: absolute; z-index: 20; display: flex; gap: 8px; background: rgba(6,10,20,0.9); border: 1px solid var(--line); clip-path: var(--chamfer-sm); padding: 10px; pointer-events: auto; }
+.emote-wheel button { width: 40px; height: 40px; border-radius: 8px; background: var(--bg-3); border: 1px solid var(--line); color: var(--text-dim); }
+.emote-wheel button:hover { color: var(--cyan); border-color: var(--cyan); }
+.emote-wheel button svg { width: 20px; height: 20px; }
+
+/* FPS + net debug */
+.hud-debug { position: absolute; top: 6px; left: 8px; z-index: 5; font-size: 10px; color: var(--text-faint); pointer-events: none; font-variant-numeric: tabular-nums; }
+
+/* quality auto-note */
+.hud-event-tag { position: absolute; top: 60px; left: 0; right: 0; text-align: center; z-index: 5; pointer-events: none; }
+.hud-event-tag span { background: rgba(6,10,20,0.7); border: 1px solid var(--line); clip-path: var(--chamfer-sm); padding: 4px 12px; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--violet); }

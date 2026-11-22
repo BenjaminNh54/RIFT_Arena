@@ -1,0 +1,30 @@
+/* RIFT ARENA — auth screens */
+.auth-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px; overflow-y: auto;
+}
+.auth-panel {
+  width: min(420px, 100%);
+  background: var(--panel-2);
+  border: 1px solid var(--line-strong);
+  clip-path: var(--chamfer);
+  box-shadow: var(--shadow);
+  padding: 30px 28px;
+  position: relative; z-index: 2;
+}
+.auth-logo { text-align: center; margin-bottom: 6px; }
+.auth-logo .l1 { font-size: 30px; font-weight: 900; letter-spacing: 0.24em; }
+.auth-logo .l1 .accent { color: var(--cyan); }
+.auth-logo .l2 { font-size: 10px; letter-spacing: 0.4em; color: var(--text-faint); text-transform: uppercase; margin-top: 4px; }
+.auth-tabs { display: flex; margin: 20px 0 18px; border: 1px solid var(--line); clip-path: var(--chamfer-sm); }
+.auth-tabs button { flex: 1; padding: 11px; font-weight: 800; letter-spacing: 0.14em; font-size: 13px; color: var(--text-dim); text-transform: uppercase; }
+.auth-tabs button.active { background: rgba(53, 224, 255, 0.12); color: var(--cyan); }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form input { padding: 13px 14px; font-size: 15px; }
+.auth-error { color: var(--red); font-size: 13px; min-height: 18px; font-weight: 600; }
+.auth-foot { text-align: center; font-size: 11px; color: var(--text-faint); margin-top: 16px; letter-spacing: 0.1em; }
+.auth-deco { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.auth-deco .rift-ring { position: absolute; border: 1px solid rgba(53, 224, 255, 0.12); border-radius: 50%; }
+.auth-deco .r1 { width: 500px; height: 500px; top: -180px; right: -140px; }
+.auth-deco .r2 { width: 700px; height: 700px; bottom: -320px; left: -220px; border-color: rgba(168, 107, 255, 0.1); }

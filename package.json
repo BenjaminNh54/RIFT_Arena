@@ -1,0 +1,25 @@
+{
+  "name": "rift-arena",
+  "version": "1.0.0",
+  "description": "RIFT ARENA - multiplayer browser arena game by TB_games",
+  "type": "module",
+  "main": "server/src/index.js",
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "node --watch server/src/index.js",
+    "test": "node --test tests/*.test.js",
+    "db:migrate": "node database/migrate.js",
+    "db:seed": "node database/seed.js",
+    "db:setup": "node database/migrate.js && node database/seed.js",
+    "admin:create": "node scripts/create-admin.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "mysql2": "^3.24.6",
+    "ws": "^8.23.0"
+  },
+  "license": "MIT",
+  "author": "TB_games"
+}

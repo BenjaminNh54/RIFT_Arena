@@ -1,0 +1,55 @@
+/* RIFT ARENA — mobile & tablet adaptations */
+@media (max-width: 860px) {
+  .screen-pad { padding: 12px 10px; }
+  .fighter-detail { grid-template-columns: 1fr; }
+  .fd-portrait { min-height: 220px; }
+  .rank-badge { width: 88px; height: 88px; }
+  .pass-tier { width: 132px; }
+  .r-row { grid-template-columns: 28px 1fr auto auto; }
+  .r-row .r-hide-m { display: none; }
+  .results-table { font-size: 12px; }
+  .member-row { grid-template-columns: 26px 1fr auto auto; }
+  .member-row .m-hide-m { display: none; }
+  .sb-row { grid-template-columns: 1fr 36px 40px; }
+  .sb-row .sb-hide-m { display: none; }
+  .hud-player { width: 200px; }
+  .joystick { width: 116px; height: 116px; }
+  .joystick .joy-knob { width: 48px; height: 48px; left: 34px; top: 34px; }
+  .aim-btn { width: 72px; height: 72px; }
+  .super-btn, .ability-btn { width: 52px; height: 52px; }
+  .profile-head .avatar { width: 60px; height: 60px; }
+  .modal { width: 100%; }
+  #toasts { top: 58px; }
+}
+
+@media (max-width: 480px) {
+  .grid.cols-2 { grid-template-columns: 1fr; }
+  .topbar .logo span { display: none; }
+  .topbar .logo svg { width: 26px; height: 26px; }
+  .hero-bottom .btn.play { width: 100%; }
+}
+
+/* Tablets: keep two columns where useful */
+@media (min-width: 861px) and (max-width: 1100px) {
+  :root { --sidebar-w: 72px; }
+  .nav-item { width: 52px; }
+}
+
+/* Safe areas for PWA fullscreen */
+.app-shell { padding-top: env(safe-area-inset-top); }
+.game-root { padding-top: env(safe-area-inset-top); }
+
+/* Landscape phones: shrink top HUD */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hud-score .hs-num { font-size: 16px; }
+  .hud-count { font-size: 34px; top: 18%; }
+  .joystick { width: 100px; height: 100px; left: 12px; bottom: 10px; }
+  .joystick .joy-knob { width: 42px; height: 42px; left: 29px; top: 29px; }
+  .aim-btn { width: 62px; height: 62px; }
+  .hud-player { bottom: 8px; left: 120px; }
+  .hud-minimap { display: none; }
+}
+
+/* Prevent text selection & pull-to-refresh during play */
+.game-root { overscroll-behavior: none; }
+body.in-game { overflow: hidden; }

@@ -1,0 +1,27 @@
+/* RIFT ARENA — admin panel */
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.adm-stat { padding: 14px; clip-path: var(--chamfer-sm); border: 1px solid var(--line); background: var(--panel); }
+.adm-stat b { font-size: 24px; display: block; }
+.adm-stat span { font-size: 10px; color: var(--text-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+.adm-stat.warn b { color: var(--orange); }
+.adm-stat.err b { color: var(--red); }
+.adm-stat.ok b { color: var(--green); }
+
+.adm-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.adm-table th { text-align: left; color: var(--text-faint); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line-strong); }
+.adm-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.adm-table tr:hover td { background: rgba(53, 224, 255, 0.04); }
+.table-scroll { overflow-x: auto; }
+
+.log-line { font-size: 12px; padding: 6px 4px; border-bottom: 1px dashed var(--line); display: flex; gap: 10px; flex-wrap: wrap; }
+.log-line .l-act { color: var(--cyan); font-weight: 800; }
+.log-line .l-role { color: var(--text-faint); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+.event-builder-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.event-builder-form .full { grid-column: 1 / -1; }
+@media (max-width: 700px) { .event-builder-form { grid-template-columns: 1fr; } }
+
+.mod-chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); padding: 6px 10px; clip-path: var(--chamfer-sm); font-size: 12px; cursor: pointer; }
+.mod-chip.on { border-color: var(--violet); color: var(--violet); background: rgba(168, 107, 255, 0.08); }
+
+.overview-live-row { display: flex; gap: 8px; align-items: center; font-size: 12.5px; padding: 7px 10px; border-bottom: 1px dashed var(--line); }
